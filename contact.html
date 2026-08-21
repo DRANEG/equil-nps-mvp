@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Contact — EQUIL</title>
+<meta name="description" content="Book a 30-minute walkthrough with an EQUIL engineer, or reach our team in London, Frankfurt or Austin." />
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header" id="header">
+  <div class="wrap header-in">
+    <a href="index.html" class="brand" aria-label="EQUIL home">
+      <svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="16" fill="#0a2b25"/>
+        <path d="M18 39.5h28" stroke="#3ee0a8" stroke-width="4.5" stroke-linecap="round"/>
+        <path d="M32 39.5 21 22h22L32 39.5Z" fill="#0f9d72"/>
+        <circle cx="32" cy="46.5" r="3.6" fill="#3ee0a8"/>
+      </svg>
+      <span class="brand-name">EQUIL</span>
+    </a>
+    <nav class="nav" id="nav" aria-label="Primary">
+      <a href="index.html">Home</a>
+      <a href="solutions.html">Solutions</a>
+      <a href="about.html">About</a>
+      <a href="index.html#insights">Insights</a>
+      <a href="contact.html" class="active">Contact</a>
+    </nav>
+    <div class="header-cta">
+      <a href="#form" class="btn btn-solid">Book a walkthrough</a>
+      <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="page-hero">
+    <span class="hero-aura a" aria-hidden="true"></span>
+    <div class="wrap">
+      <p class="crumb rv"><a href="index.html">Home</a> &nbsp;/&nbsp; Contact</p>
+      <h1 class="h-display rv" style="max-width:15ch">Bring us your worst process</h1>
+      <p class="lede rv">Thirty minutes, your systems on screen, a real engineer on the call. You'll leave with a map of where your handoffs break — whether or not you become a customer.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="form" style="padding-top:24px">
+    <div class="wrap split" style="align-items:flex-start">
+      <div class="rv">
+        <div id="formOk" class="form-ok" role="status">
+          <span aria-hidden="true">✓</span>
+          <div><b>Thanks — that's with us.</b><br>An engineer will reply within one business day to book a time that suits you.</div>
+        </div>
+
+        <form id="contactForm" novalidate style="margin-top:8px">
+          <div class="form-grid">
+            <div class="field">
+              <label for="firstName">First name</label>
+              <input id="firstName" name="firstName" type="text" required autocomplete="given-name" placeholder="Maria" />
+            </div>
+            <div class="field">
+              <label for="lastName">Last name</label>
+              <input id="lastName" name="lastName" type="text" required autocomplete="family-name" placeholder="Jensen" />
+            </div>
+            <div class="field full">
+              <label for="workEmail">Work email</label>
+              <input id="workEmail" name="workEmail" type="email" required autocomplete="email" placeholder="you@company.com" />
+            </div>
+            <div class="field">
+              <label for="company">Company</label>
+              <input id="company" name="company" type="text" required autocomplete="organization" placeholder="Northpeak Logistics" />
+            </div>
+            <div class="field">
+              <label for="size">Company size</label>
+              <select id="size" name="size" required>
+                <option value="">Select…</option>
+                <option>1–50 employees</option>
+                <option>51–200 employees</option>
+                <option>201–1,000 employees</option>
+                <option>1,000+ employees</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label for="topic">What's pulling hardest right now?</label>
+              <select id="topic" name="topic" required>
+                <option value="">Select…</option>
+                <option>Month-end close takes too long</option>
+                <option>Systems disagree about our numbers</option>
+                <option>Too much manual reconciliation</option>
+                <option>We hear about unhappy customers too late</option>
+                <option>Something else</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label for="message">Anything you'd like us to look at first?</label>
+              <textarea id="message" name="message" placeholder="Tell us about the process that frustrates you most — the more specific, the more useful the call."></textarea>
+            </div>
+            <div class="field full">
+              <button type="submit" class="btn btn-emerald btn-lg" style="width:100%">
+                Request a walkthrough
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <p class="form-note" style="margin-top:12px">We reply within one business day. Your details are never sold or shared — see our privacy notice.</p>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="split-media rv">
+        <div class="panel" style="margin-bottom:28px">
+          <h3 class="h-3" style="margin-bottom:14px">Prefer to skip the form?</h3>
+          <div class="panel-row"><div><b>General enquiries</b><small>hello@equil.io</small></div><a class="chip" href="mailto:hello@equil.io">Email</a></div>
+          <div class="panel-row"><div><b>Sales</b><small>+1 (800) 555-0142</small></div><a class="chip" href="tel:+18005550142">Call</a></div>
+          <div class="panel-row"><div><b>Existing customer support</b><small>Answered in ~40 minutes, 24/5</small></div><a class="chip" href="mailto:support@equil.io">Support</a></div>
+          <div class="panel-row"><div><b>Security &amp; compliance</b><small>security@equil.io</small></div><a class="chip chip-grey" href="mailto:security@equil.io">Contact</a></div>
+        </div>
+
+        <h3 class="h-3" style="margin-bottom:4px">Offices</h3>
+        <div class="office">
+          <h4>London</h4>
+          <p>Unit 4, Bermondsey Yard<br>London SE1 3UN, United Kingdom</p>
+        </div>
+        <div class="office">
+          <h4>Frankfurt</h4>
+          <p>Taunusanlage 8<br>60329 Frankfurt am Main, Germany</p>
+        </div>
+        <div class="office">
+          <h4>Austin</h4>
+          <p>512 Congress Ave, Suite 1400<br>Austin, TX 78701, United States</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="sec sec-sand" id="faq">
+    <div class="wrap wrap-narrow">
+      <div class="sec-head rv">
+        <p class="eyebrow">FAQ</p>
+        <h2 class="h-2">The questions we get asked first</h2>
+      </div>
+
+      <div class="faq">
+        <div class="faq-item rv">
+          <button class="faq-q" aria-expanded="false">How long does implementation actually take?<span class="faq-ico" aria-hidden="true"></span></button>
+          <div class="faq-a"><p>Median time to go live is eleven days for the Equilibrium plan, measured across every customer onboarded in the last year. Simple Foundation setups are often live within a week. Multi-entity enterprise rollouts run four to eight weeks, and we'll tell you which bucket you're in before you sign anything.</p></div>
+        </div>
+        <div class="faq-item rv">
+          <button class="faq-q" aria-expanded="false">Do we have to replace our existing systems?<span class="faq-ico" aria-hidden="true"></span></button>
+          <div class="faq-a"><p>No — and we'd push back if you wanted to. EQUIL sits underneath your CRM, ERP, billing and support tools and gives them a shared record. Your team keeps working where they already work. The point is to stop the systems disagreeing, not to add a migration project on top of the problem.</p></div>
+        </div>
+        <div class="faq-item rv">
+          <button class="faq-q" aria-expanded="false">What happens to our data if we leave?<span class="faq-ico" aria-hidden="true"></span></button>
+          <div class="faq-a"><p>You export everything, in open formats, whenever you want — during the contract or on the way out. There is no retention hold and no export fee, and our team will help you move it. We'd rather you leave cleanly than stay because it's painful to go.</p></div>
+        </div>
+        <div class="faq-item rv">
+          <button class="faq-q" aria-expanded="false">Is it priced per user?<span class="faq-ico" aria-hidden="true"></span></button>
+          <div class="faq-a"><p>No. Pricing is per company, based on how many systems you connect. Charging per seat would mean charging you for putting the right people in front of the data, which is the opposite of what the product is for. Users and dashboards are unlimited on every plan.</p></div>
+        </div>
+        <div class="faq-item rv">
+          <button class="faq-q" aria-expanded="false">How do you handle security and compliance?<span class="faq-ico" aria-hidden="true"></span></button>
+          <div class="faq-a"><p>SOC 2 Type II and ISO 27001 certified, GDPR and CCPA ready, with EU or US data residency you choose at setup. Every action is written to an immutable audit log, and your auditors can have their own read-only access. Our current reports and posture are available without a sales call — email security@equil.io.</p></div>
+        </div>
+        <div class="faq-item rv">
+          <button class="faq-q" aria-expanded="false">What if we're too small — or too complicated?<span class="faq-ico" aria-hidden="true"></span></button>
+          <div class="faq-a"><p>Then we'll say so on the call. We've told companies to keep their spreadsheet for another year, because the honest answer was that a platform wouldn't pay for itself yet. Several came back later. A thirty-minute conversation costs you less than finding out the expensive way.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-band sec-dark">
+    <div class="wrap center">
+      <h2 class="h-1 rv">Still deciding? Read the work first.</h2>
+      <p class="lede rv measure center">Our notes on operations, data and customer experience — written by the people doing the implementations.</p>
+      <div class="cta-actions rv">
+        <a href="index.html#insights" class="btn btn-light btn-lg">Read Insights</a>
+        <a href="solutions.html#pricing" class="btn btn-line-light btn-lg">See pricing</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="foot-top">
+      <div>
+        <a href="index.html" class="brand">
+          <svg width="28" height="28" viewBox="0 0 64 64" aria-hidden="true">
+            <rect width="64" height="64" rx="16" fill="#3ee0a8"/>
+            <path d="M18 39.5h28" stroke="#0a2b25" stroke-width="4.5" stroke-linecap="round"/>
+            <path d="M32 39.5 21 22h22L32 39.5Z" fill="#0a2b25"/>
+            <circle cx="32" cy="46.5" r="3.6" fill="#0a2b25"/>
+          </svg>
+          <span class="brand-name">EQUIL</span>
+        </a>
+        <p class="foot-blurb">Smart business solutions for companies that would rather grow steadily than scramble quarterly.</p>
+      </div>
+      <div class="foot-sub">
+        <h4>The Balance Sheet</h4>
+        <p>One considered email a month on operations, data and customer experience. No product news.</p>
+        <form class="subscribe" data-subscribe>
+          <label class="sr-only" for="footEmail">Email address</label>
+          <input id="footEmail" type="email" required placeholder="you@company.com" autocomplete="email" />
+          <button type="submit" class="btn btn-emerald">Subscribe</button>
+        </form>
+        <p class="form-note" data-subscribe-note style="margin-top:12px;color:rgba(255,255,255,.4)">Unsubscribe in one click.</p>
+      </div>
+    </div>
+    <div class="foot-links">
+      <div><h5>Platform</h5><ul>
+        <li><a href="solutions.html">Operations automation</a></li>
+        <li><a href="solutions.html">Analytics &amp; forecasting</a></li>
+        <li><a href="solutions.html">Pulse — sentiment &amp; NPS</a></li>
+        <li><a href="solutions.html">Integration fabric</a></li>
+      </ul></div>
+      <div><h5>Company</h5><ul>
+        <li><a href="about.html">About us</a></li>
+        <li><a href="about.html#team">Team</a></li>
+        <li><a href="about.html#timeline">Our story</a></li>
+        <li><a href="contact.html">Careers</a></li>
+      </ul></div>
+      <div><h5>Resources</h5><ul>
+        <li><a href="index.html#insights">Insights</a></li>
+        <li><a href="solutions.html#pricing">Pricing</a></li>
+        <li><a href="contact.html#faq">FAQ</a></li>
+        <li><a href="contact.html">Support</a></li>
+      </ul></div>
+      <div><h5>Contact</h5><ul>
+        <li><a href="mailto:hello@equil.io">hello@equil.io</a></li>
+        <li><a href="tel:+18005550142">+1 (800) 555-0142</a></li>
+        <li><a href="contact.html">Book a walkthrough</a></li>
+      </ul></div>
+    </div>
+    <div class="foot-bot">
+      <p>© <span data-year></span> EQUIL Smart Business Solutions.</p>
+      <nav aria-label="Legal">
+        <a href="contact.html">Privacy</a><a href="contact.html">Terms</a><a href="contact.html">Security</a><a href="contact.html">Status</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

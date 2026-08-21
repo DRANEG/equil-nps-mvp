@@ -2,44 +2,49 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>EQUIL — Smart Business Solutions</title>
-<meta name="description" content="EQUIL helps growing companies balance automation, data, and customer experience — smart business solutions that scale with you." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230F1F3D'/%3E%3Cpath d='M16 40 L32 18 L48 40' stroke='%2300D9A3' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='32' cy='46' r='4' fill='%2300D9A3'/%3E%3C/svg%3E" />
+<meta name="description" content="EQUIL brings operations, data and customer sentiment into one balanced system, so growing companies can scale without the scramble." />
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-
 <a class="skip-link" href="#main">Skip to content</a>
 
+<div class="announce">
+  <div class="wrap announce-in">
+    <span class="tag">New</span>
+    <span>Pulse 2.0 turns customer sentiment into a weekly operating rhythm.</span>
+    <a href="solutions.html">See what changed</a>
+  </div>
+</div>
+
 <header class="site-header" id="header">
-  <div class="container header-inner">
-    <a href="#home" class="brand">
-      <span class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 64 64" width="28" height="28">
-          <rect width="64" height="64" rx="14" fill="#0F1F3D"/>
-          <path d="M16 40 L32 18 L48 40" stroke="#00D9A3" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="32" cy="46" r="4" fill="#00D9A3"/>
-        </svg>
-      </span>
+  <div class="wrap header-in">
+    <a href="index.html" class="brand" aria-label="EQUIL home">
+      <svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="16" fill="#0a2b25"/>
+        <path d="M18 39.5h28" stroke="#3ee0a8" stroke-width="4.5" stroke-linecap="round"/>
+        <path d="M32 39.5 21 22h22L32 39.5Z" fill="#0f9d72"/>
+        <circle cx="32" cy="46.5" r="3.6" fill="#3ee0a8"/>
+      </svg>
       <span class="brand-name">EQUIL</span>
     </a>
 
-    <nav class="main-nav" id="main-nav" aria-label="Primary">
-      <a href="#solutions">Solutions</a>
-      <a href="#why">Why EQUIL</a>
-      <a href="#process">How it works</a>
-      <a href="#testimonials">Customers</a>
-      <a href="#contact">Contact</a>
+    <nav class="nav" id="nav" aria-label="Primary">
+      <a href="index.html" class="active">Home</a>
+      <a href="solutions.html">Solutions</a>
+      <a href="about.html">About</a>
+      <a href="index.html#insights">Insights</a>
+      <a href="contact.html">Contact</a>
     </nav>
 
-    <div class="header-actions">
-      <a href="#contact" class="btn btn-ghost">Log in</a>
-      <a href="#contact" class="btn btn-primary">Get a demo</a>
-      <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="main-nav">
+    <div class="header-cta">
+      <a href="contact.html" class="btn btn-solid">Book a walkthrough</a>
+      <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav">
         <span></span><span></span><span></span>
       </button>
     </div>
@@ -48,295 +53,362 @@
 
 <main id="main">
 
-  <!-- HERO -->
-  <section class="hero" id="home">
-    <div class="hero-glow" aria-hidden="true"></div>
-    <div class="container hero-inner">
-      <div class="hero-copy">
-        <p class="eyebrow reveal">Smart Business Solutions</p>
-        <h1 class="reveal">Bring your business into <span class="text-accent">equilibrium.</span></h1>
-        <p class="hero-sub reveal">
-          EQUIL unifies automation, real-time analytics, and customer sentiment tracking
-          into one calm, connected platform — so growing teams can move fast without losing balance.
-        </p>
-        <div class="hero-cta reveal">
-          <a href="#contact" class="btn btn-primary btn-lg">Start free trial</a>
-          <a href="#solutions" class="btn btn-outline btn-lg">Explore solutions</a>
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <span class="hero-aura a" aria-hidden="true"></span>
+    <span class="hero-aura b" aria-hidden="true"></span>
+    <div class="wrap hero-grid">
+      <div>
+        <p class="eyebrow rv">Smart business solutions</p>
+        <h1 class="h-display rv">Growth is easy.<br>Staying <span class="em-accent">in balance</span> is the hard part.</h1>
+        <p class="lede rv">Most companies bolt on a tool for every problem and end up managing the tools instead of the business. EQUIL puts operations, data and customer sentiment on one system — so what you fix in one place doesn't quietly break another.</p>
+        <div class="hero-actions rv">
+          <a href="contact.html" class="btn btn-emerald btn-lg">
+            Book a walkthrough
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <a href="solutions.html" class="btn btn-line btn-lg">Explore the platform</a>
         </div>
-        <div class="hero-trust reveal">
-          <span>Trusted by fast-growing teams at</span>
-          <div class="logo-row" aria-hidden="true">
-            <span>NORTHPEAK</span><span>Vantiq</span><span>Rivergate</span><span>Lumen&amp;Co</span><span>Brightfield</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="hero-art reveal" aria-hidden="true">
-        <div class="hero-card card-main">
-          <div class="card-top">
-            <span class="dot dot-a"></span><span class="dot dot-b"></span><span class="dot dot-c"></span>
-          </div>
-          <p class="card-label">Customer Sentiment</p>
-          <div class="nps-score">
-            <span class="nps-number">+64</span>
-            <span class="nps-tag up">▲ 12 pts</span>
-          </div>
-          <div class="bars">
-            <div class="bar" style="--h:38%"></div>
-            <div class="bar" style="--h:62%"></div>
-            <div class="bar" style="--h:48%"></div>
-            <div class="bar" style="--h:80%"></div>
-            <div class="bar" style="--h:66%"></div>
-            <div class="bar" style="--h:92%"></div>
-          </div>
-        </div>
-        <div class="hero-card card-float card-1">
-          <span class="pill">Workflow automated</span>
-          <strong>Invoice reconciliation</strong>
-          <small>Completed in 1.2s</small>
-        </div>
-        <div class="hero-card card-float card-2">
-          <span class="pill pill-alt">Live</span>
-          <strong>Revenue synced</strong>
-          <small>All channels connected</small>
+        <div class="hero-proof rv">
+          <div><span data-count="3200" data-suffix="+">0</span><small>businesses running on EQUIL</small></div>
+          <div><span data-count="42" data-suffix="%">0</span><small>faster operating cycles</small></div>
+          <div><span data-count="11" data-suffix=" days">0</span><small>median time to go live</small></div>
         </div>
       </div>
-    </div>
-  </section>
 
-  <!-- STATS -->
-  <section class="stats">
-    <div class="container stats-grid">
-      <div class="stat reveal">
-        <span class="stat-num" data-count="42">0</span><span class="stat-suffix">%</span>
-        <p>faster operational cycles</p>
-      </div>
-      <div class="stat reveal">
-        <span class="stat-num" data-count="3200">0</span><span class="stat-suffix">+</span>
-        <p>businesses balanced</p>
-      </div>
-      <div class="stat reveal">
-        <span class="stat-num" data-count="98">0</span><span class="stat-suffix">%</span>
-        <p>customer retention rate</p>
-      </div>
-      <div class="stat reveal">
-        <span class="stat-num" data-count="24">0</span><span class="stat-suffix">/7</span>
-        <p>real-time monitoring</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- SOLUTIONS -->
-  <section class="solutions" id="solutions">
-    <div class="container">
-      <p class="eyebrow center reveal">Solutions</p>
-      <h2 class="section-title center reveal">One platform, every moving part in sync</h2>
-      <p class="section-sub center reveal">Six connected modules that keep strategy, operations, and customers in balance.</p>
-
-      <div class="solution-grid">
-        <article class="solution-card reveal">
-          <div class="icon-badge" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 1 8 8" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M4 12V7m0 5h5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="hero-fig rv">
+        <div class="fig-frame">
+          <div class="fig-head">
+            <h4>Customer sentiment</h4>
+            <small>Last 6 months</small>
           </div>
-          <h3>Business Automation</h3>
-          <p>Eliminate repetitive work with no-code workflows that connect your tools and approve, route, and reconcile on their own.</p>
-        </article>
-
-        <article class="solution-card reveal">
-          <div class="icon-badge" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 20V10m7 10V4m7 16v-7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+          <div class="fig-metric">
+            <b>+64</b>
+            <span class="fig-delta">▲ 12 pts</span>
           </div>
-          <h3>Data &amp; Analytics</h3>
-          <p>Turn scattered spreadsheets into a single live dashboard with forecasts, anomaly alerts, and shareable reports.</p>
-        </article>
 
-        <article class="solution-card reveal">
-          <div class="icon-badge" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 21s-7-4.6-9.5-9.1C.8 8.3 2.6 5 6 5c2 0 3.4 1.1 4 2.3C10.6 6.1 12 5 14 5c3.4 0 5.2 3.3 3.5 6.9C19.5 16.4 12 21 12 21Z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></svg>
+          <svg class="spark" viewBox="0 0 320 96" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#0f9d72" stop-opacity=".22"/>
+                <stop offset="100%" stop-color="#0f9d72" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path class="area" d="M4 74 L57 66 L110 70 L163 48 L216 40 L269 26 L316 14 L316 96 L4 96 Z"/>
+            <path class="line" d="M4 74 L57 66 L110 70 L163 48 L216 40 L269 26 L316 14"/>
+            <circle cx="316" cy="14" r="4.5"/>
+          </svg>
+
+          <div class="fig-legend">
+            <div><small>Promoters</small><b>71%</b></div>
+            <div><small>Passives</small><b>22%</b></div>
+            <div><small>Detractors</small><b>7%</b></div>
           </div>
-          <h3>NPS &amp; Customer Sentiment</h3>
-          <p>Capture Net Promoter Score in the moment, segment detractors from promoters, and close the loop automatically.</p>
-        </article>
+        </div>
 
-        <article class="solution-card reveal">
-          <div class="icon-badge" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M6 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.8A4.5 4.5 0 0 1 18 18H6Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/></svg>
-          </div>
-          <h3>Cloud Integration</h3>
-          <p>Plug into the stack you already run — CRM, ERP, payments, and support — with pre-built, secure connectors.</p>
-        </article>
-
-        <article class="solution-card reveal">
-          <div class="icon-badge" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <h3>Workflow Optimization</h3>
-          <p>Spot bottlenecks before they cost you revenue with process mining that recommends the next best fix.</p>
-        </article>
-
-        <article class="solution-card reveal">
-          <div class="icon-badge" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/></svg>
-          </div>
-          <h3>Advisory &amp; Consulting</h3>
-          <p>Work with a dedicated strategist who reviews your metrics monthly and helps you act on what changed.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <!-- WHY -->
-  <section class="why" id="why">
-    <div class="container why-inner">
-      <div class="why-copy">
-        <p class="eyebrow reveal">Why EQUIL</p>
-        <h2 class="section-title reveal">Built for teams who'd rather grow steady than scramble</h2>
-        <p class="section-sub reveal">Most tools optimize one thing and break another. EQUIL keeps your operations, data, and customers in equilibrium — so growth doesn't come at the cost of stability.</p>
-
-        <ul class="feature-list">
-          <li class="reveal">
-            <span class="check" aria-hidden="true">✓</span>
-            <div><strong>Enterprise-grade security</strong><p>SOC 2 Type II, end-to-end encryption, and granular role-based access.</p></div>
-          </li>
-          <li class="reveal">
-            <span class="check" aria-hidden="true">✓</span>
-            <div><strong>Radically simple to adopt</strong><p>Live in under two weeks, with guided onboarding and migration support.</p></div>
-          </li>
-          <li class="reveal">
-            <span class="check" aria-hidden="true">✓</span>
-            <div><strong>Scales with you</strong><p>From 10 to 10,000 employees — the same platform, no re-platforming.</p></div>
-          </li>
-          <li class="reveal">
-            <span class="check" aria-hidden="true">✓</span>
-            <div><strong>Human support, always</strong><p>A real strategist on call, not just a ticket queue.</p></div>
-          </li>
-        </ul>
-      </div>
-
-      <div class="why-visual reveal" aria-hidden="true">
-        <div class="balance-graphic">
-          <div class="beam">
-            <div class="pan pan-left"><span>Automation</span></div>
-            <div class="pan pan-right"><span>Insight</span></div>
-          </div>
-          <div class="fulcrum"></div>
+        <div class="fig-note">
+          <b><span class="dot-live"></span>Loop closed</b>
+          <small>9 detractors contacted within the hour, automatically.</small>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- PROCESS -->
-  <section class="process" id="process">
-    <div class="container">
-      <p class="eyebrow center reveal">How it works</p>
-      <h2 class="section-title center reveal">Three steps to a balanced business</h2>
+  <!-- ============ MARQUEE ============ -->
+  <section class="marquee-sec">
+    <div class="wrap"><p class="marquee-label">Trusted by operators at</p></div>
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <span>NORTHPEAK</span><span>Vantiq</span><span>Rivergate</span><span>Lumen &amp; Co</span><span>Brightfield</span><span>海 Meridian</span><span>Ashcroft</span><span>Tessellate</span>
+      </div>
+      <div class="marquee-track">
+        <span>NORTHPEAK</span><span>Vantiq</span><span>Rivergate</span><span>Lumen &amp; Co</span><span>Brightfield</span><span>海 Meridian</span><span>Ashcroft</span><span>Tessellate</span>
+      </div>
+    </div>
+  </section>
 
-      <div class="steps">
-        <div class="step reveal">
-          <span class="step-num">01</span>
-          <h3>Connect</h3>
-          <p>Link your existing tools — CRM, finance, support — in minutes with guided setup, no engineering required.</p>
-        </div>
-        <div class="step reveal">
-          <span class="step-num">02</span>
-          <h3>Automate</h3>
-          <p>Turn manual processes into workflows that run themselves, with alerts only when a human decision is needed.</p>
-        </div>
-        <div class="step reveal">
-          <span class="step-num">03</span>
-          <h3>Improve</h3>
-          <p>Track NPS, revenue, and efficiency on one dashboard, and let EQUIL recommend the next high-impact fix.</p>
+  <!-- ============ THE PROBLEM ============ -->
+  <section class="sec">
+    <div class="wrap split split-a">
+      <div>
+        <p class="eyebrow rv">The problem</p>
+        <h2 class="h-2 rv" style="margin-bottom:22px">Twelve tools. None of them talking.</h2>
+        <p class="lede rv" style="margin-bottom:26px">The average mid-sized company runs finance in one system, support in another, and the truth about its customers in a spreadsheet someone updates on Fridays. Every answer takes three days and two apologies.</p>
+        <p class="muted rv" style="margin-bottom:32px">EQUIL isn't another box on that diagram. It's the layer underneath — one place where the numbers agree, the handoffs are automatic, and nobody has to ask which version is current.</p>
+        <a href="about.html" class="link-arrow rv">Why we built it this way
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+
+      <div class="split-media rv">
+        <div class="stat-block">
+          <div><b>19h</b><small>lost per employee each month to manual reconciliation and status chasing.</small></div>
+          <div><b>4 in 5</b><small>leaders say their reporting contradicts itself across departments.</small></div>
+          <div><b>68%</b><small>of churn is visible in support data weeks before finance sees it.</small></div>
+          <div><b>1 in 3</b><small>automation projects stall because systems can't share a customer record.</small></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- TESTIMONIALS -->
-  <section class="testimonials" id="testimonials">
-    <div class="container">
-      <p class="eyebrow center reveal">Customers</p>
-      <h2 class="section-title center reveal">Teams that found their balance</h2>
+  <!-- ============ APPROACH ============ -->
+  <section class="sec sec-sand">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <p class="eyebrow">Our approach</p>
+        <h2 class="h-2">Three moves, in this order. It matters.</h2>
+        <p class="lede">Automation before clean data creates fast mistakes. Dashboards without a feedback loop create expensive wallpaper. We sequence it deliberately.</p>
+      </div>
 
-      <div class="testimonial-grid">
-        <figure class="testimonial-card reveal">
-          <blockquote>"EQUIL cut our order-to-cash cycle by a third and our NPS jumped 18 points in one quarter. The dashboard alone paid for itself."</blockquote>
-          <figcaption>
-            <span class="avatar" aria-hidden="true">MJ</span>
-            <div><strong>Maria Jensen</strong><small>COO, Northpeak Logistics</small></div>
-          </figcaption>
+      <div class="pillars">
+        <article class="pillar rv">
+          <span class="pillar-n">01 — Connect</span>
+          <h3 class="h-3">One record, every system</h3>
+          <p>We map your CRM, ERP, billing and support into a single customer and order record. No migration, no rip-and-replace — your existing stack keeps running, it just stops disagreeing with itself.</p>
+        </article>
+        <article class="pillar rv">
+          <span class="pillar-n">02 — Automate</span>
+          <h3 class="h-3">The boring work runs itself</h3>
+          <p>Approvals, reconciliation, renewal notices and escalations move on their own. People are pulled in by exception, when judgement is actually needed — not to copy a number from one tab to another.</p>
+        </article>
+        <article class="pillar rv">
+          <span class="pillar-n">03 — Improve</span>
+          <h3 class="h-3">A loop that keeps closing</h3>
+          <p>Sentiment, revenue and throughput sit on one board with the same definitions. When a metric moves, EQUIL shows what moved it and what to do next — weekly, not quarterly.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SOLUTIONS ============ -->
+  <section class="sec" id="solutions">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <p class="eyebrow">The platform</p>
+        <h2 class="h-2">Six modules, one system of record</h2>
+        <p class="lede">Start with the one that hurts most. They compound as you add them, because they were built to share the same data.</p>
+      </div>
+
+      <div class="cards">
+        <article class="card rv">
+          <div class="card-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 1 1 8 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4 12V7m0 5h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3 class="h-3">Operations automation</h3>
+          <p>Visual workflows that route, approve and reconcile across systems — built by your ops team, not a developer queue.</p>
+        </article>
+        <article class="card rv">
+          <div class="card-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20V10m7 10V4m7 16v-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></div>
+          <h3 class="h-3">Analytics &amp; forecasting</h3>
+          <p>One definition per metric, applied everywhere. Forecasts, anomaly alerts and board-ready reporting from live data.</p>
+        </article>
+        <article class="card rv">
+          <div class="card-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.6-9.5-9.1C.8 8.3 2.6 5 6 5c2 0 3.4 1.1 4 2.3C10.6 6.1 12 5 14 5c3.4 0 5.2 3.3 3.5 6.9C19.5 16.4 12 21 12 21Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+          <h3 class="h-3">Pulse — sentiment &amp; NPS</h3>
+          <p>Capture NPS in the moment it's earned, segment promoters from detractors, and trigger the follow-up automatically.</p>
+        </article>
+        <article class="card rv">
+          <div class="card-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.8A4.5 4.5 0 0 1 18 18H6Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></div>
+          <h3 class="h-3">Integration fabric</h3>
+          <p>140+ maintained connectors plus a typed API. Field mapping is versioned, so an upstream change never silently corrupts a report.</p>
+        </article>
+        <article class="card rv">
+          <div class="card-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12h4l3 8 4-16 3 8h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3 class="h-3">Process intelligence</h3>
+          <p>See where work actually queues, what it costs you in days and margin, and which fix returns the most for the least disruption.</p>
+        </article>
+        <article class="card rv">
+          <div class="card-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></div>
+          <h3 class="h-3">Governance &amp; controls</h3>
+          <p>SOC 2 Type II, role-based access, full audit trail, EU or US data residency. Auditors get their own read-only view.</p>
+        </article>
+      </div>
+
+      <div class="center rv" style="margin-top:44px">
+        <a href="solutions.html" class="btn btn-line btn-lg">
+          See every module in detail
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CASE STUDY ============ -->
+  <section class="sec sec-dark">
+    <div class="wrap case-grid">
+      <div>
+        <p class="eyebrow on-dark rv">Case study — Northpeak Logistics</p>
+        <h2 class="h-2 rv" style="margin-bottom:22px">From a five-day close to a next-morning one</h2>
+        <p class="lede rv" style="margin-bottom:26px">Northpeak was growing 40% a year on a finance process held together by four spreadsheets and one very patient controller. Invoices were reconciled by hand, disputes surfaced weeks late, and nobody could say which customers were unhappy until they left.</p>
+        <p class="rv" style="margin-bottom:32px">In eleven days EQUIL connected their ERP, billing and support desk to a single order record, automated reconciliation, and wired Pulse into every delivery confirmation. The controller now reviews exceptions — 14 of them, instead of 2,000 line items.</p>
+        <a href="contact.html" class="link-arrow rv">Talk to us about your close
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+      <div class="rv">
+        <div class="case-metrics">
+          <div><b>5d → 1d</b><small>month-end close, with fewer people on it</small></div>
+          <div><b>+18</b><small>NPS points in a single quarter</small></div>
+          <div><b>−31%</b><small>order-to-cash cycle time</small></div>
+          <div><b>2,000</b><small>manual reconciliations removed per month</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TESTIMONIALS ============ -->
+  <section class="sec sec-sand">
+    <div class="wrap">
+      <div class="sec-head center rv">
+        <p class="eyebrow no-rule" style="justify-content:center">In their words</p>
+        <h2 class="h-2">Operators, not marketers</h2>
+      </div>
+      <div class="cards">
+        <figure class="quote-card rv">
+          <span class="qmark" aria-hidden="true">“</span>
+          <blockquote>The dashboard was nice. The part that changed our quarter was that finance and support finally argued from the same number.</blockquote>
+          <figcaption class="byline"><span class="ava" aria-hidden="true">MJ</span><div><b>Maria Jensen</b><small>COO, Northpeak Logistics</small></div></figcaption>
         </figure>
-        <figure class="testimonial-card reveal">
-          <blockquote>"We replaced four disconnected tools with EQUIL. Onboarding took nine days and the team never looked back."</blockquote>
-          <figcaption>
-            <span class="avatar" aria-hidden="true">DK</span>
-            <div><strong>David Kim</strong><small>Head of Ops, Vantiq</small></div>
-          </figcaption>
+        <figure class="quote-card rv">
+          <span class="qmark" aria-hidden="true">“</span>
+          <blockquote>We replaced four systems and expected six months of pain. It was nine days and one training session. I keep waiting for the catch.</blockquote>
+          <figcaption class="byline"><span class="ava" aria-hidden="true">DK</span><div><b>David Kim</b><small>Head of Operations, Vantiq</small></div></figcaption>
         </figure>
-        <figure class="testimonial-card reveal">
-          <blockquote>"The customer sentiment loop is the real unlock — we now hear from detractors within the hour, not the quarterly survey."</blockquote>
-          <figcaption>
-            <span class="avatar" aria-hidden="true">RS</span>
-            <div><strong>Rina Sato</strong><small>VP CX, Brightfield</small></div>
-          </figcaption>
+        <figure class="quote-card rv">
+          <span class="qmark" aria-hidden="true">“</span>
+          <blockquote>We used to hear from unhappy customers in a quarterly survey, long after we could do anything. Now it's within the hour, with the account already pulled up.</blockquote>
+          <figcaption class="byline"><span class="ava" aria-hidden="true">RS</span><div><b>Rina Sato</b><small>VP Customer Experience, Brightfield</small></div></figcaption>
         </figure>
       </div>
     </div>
   </section>
 
-  <!-- CTA -->
-  <section class="cta" id="contact">
-    <div class="container cta-inner reveal">
-      <h2>Ready to bring your business into balance?</h2>
-      <p>Join thousands of teams running smarter, steadier operations with EQUIL.</p>
-      <form class="cta-form" id="ctaForm">
-        <label class="sr-only" for="email">Work email</label>
-        <input id="email" type="email" required placeholder="you@company.com" autocomplete="email" />
-        <button type="submit" class="btn btn-primary btn-lg">Get started free</button>
-      </form>
-      <p class="cta-note" id="ctaNote">No credit card required · 14-day free trial</p>
+  <!-- ============ INSIGHTS ============ -->
+  <section class="sec" id="insights">
+    <div class="wrap">
+      <div class="sec-head rv" style="display:flex;justify-content:space-between;align-items:flex-end;max-width:none;gap:24px;flex-wrap:wrap">
+        <div style="max-width:560px">
+          <p class="eyebrow">Insights</p>
+          <h2 class="h-2">Notes from the work</h2>
+        </div>
+        <a href="#insights" class="link-arrow">All articles
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+
+      <div class="cards">
+        <a href="#insights" class="post rv">
+          <div class="post-thumb t1"></div>
+          <p class="post-meta">Operations · 6 min read</p>
+          <h3>Why your automation project stalled at 60%</h3>
+          <p>Nearly every stalled rollout fails at the same place: two systems that disagree about what a customer is. Here's how to find yours.</p>
+        </a>
+        <a href="#insights" class="post rv">
+          <div class="post-thumb t2"></div>
+          <p class="post-meta">Customer experience · 4 min read</p>
+          <h3>NPS is a lagging indicator — unless you do this</h3>
+          <p>A score you collect quarterly is a report card. Collected at the moment of delivery, it becomes an early-warning system.</p>
+        </a>
+        <a href="#insights" class="post rv">
+          <div class="post-thumb t3"></div>
+          <p class="post-meta">Finance · 8 min read</p>
+          <h3>The real cost of a five-day close</h3>
+          <p>It isn't the five days. It's the decisions your leadership defers while waiting for numbers they don't quite trust.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTA ============ -->
+  <section class="cta-band sec-dark">
+    <div class="wrap center">
+      <h2 class="h-1 rv">Let's find where your business<br>is pulling against itself.</h2>
+      <p class="lede rv measure center">A 30-minute walkthrough, your systems on screen. You'll leave with a map of where the handoffs break — whether or not you ever become a customer.</p>
+      <div class="cta-actions rv">
+        <a href="contact.html" class="btn btn-emerald btn-lg">
+          Book a walkthrough
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="solutions.html" class="btn btn-line-light btn-lg">See pricing</a>
+      </div>
+      <p class="cta-fine rv">No slide deck. No credit card. A real engineer on the call.</p>
     </div>
   </section>
 
 </main>
 
 <footer class="site-footer">
-  <div class="container footer-inner">
-    <div class="footer-brand">
-      <a href="#home" class="brand">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 64 64" width="24" height="24">
-            <rect width="64" height="64" rx="14" fill="#00D9A3"/>
-            <path d="M16 40 L32 18 L48 40" stroke="#0F1F3D" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="32" cy="46" r="4" fill="#0F1F3D"/>
+  <div class="wrap">
+    <div class="foot-top">
+      <div>
+        <a href="index.html" class="brand">
+          <svg width="28" height="28" viewBox="0 0 64 64" aria-hidden="true">
+            <rect width="64" height="64" rx="16" fill="#3ee0a8"/>
+            <path d="M18 39.5h28" stroke="#0a2b25" stroke-width="4.5" stroke-linecap="round"/>
+            <path d="M32 39.5 21 22h22L32 39.5Z" fill="#0a2b25"/>
+            <circle cx="32" cy="46.5" r="3.6" fill="#0a2b25"/>
           </svg>
-        </span>
-        <span class="brand-name">EQUIL</span>
-      </a>
-      <p>Smart business solutions for teams who grow on purpose.</p>
+          <span class="brand-name">EQUIL</span>
+        </a>
+        <p class="foot-blurb">Smart business solutions for companies that would rather grow steadily than scramble quarterly.</p>
+      </div>
+      <div class="foot-sub">
+        <h4>The Balance Sheet</h4>
+        <p>One considered email a month on operations, data and customer experience. No product news.</p>
+        <form class="subscribe" data-subscribe>
+          <label class="sr-only" for="footEmail">Email address</label>
+          <input id="footEmail" type="email" required placeholder="you@company.com" autocomplete="email" />
+          <button type="submit" class="btn btn-emerald">Subscribe</button>
+        </form>
+        <p class="form-note" data-subscribe-note style="margin-top:12px;color:rgba(255,255,255,.4)">Unsubscribe in one click.</p>
+      </div>
     </div>
 
-    <div class="footer-links">
+    <div class="foot-links">
       <div>
-        <h4>Product</h4>
-        <a href="#solutions">Solutions</a>
-        <a href="#why">Why EQUIL</a>
-        <a href="#process">How it works</a>
+        <h5>Platform</h5>
+        <ul>
+          <li><a href="solutions.html">Operations automation</a></li>
+          <li><a href="solutions.html">Analytics &amp; forecasting</a></li>
+          <li><a href="solutions.html">Pulse — sentiment &amp; NPS</a></li>
+          <li><a href="solutions.html">Integration fabric</a></li>
+        </ul>
       </div>
       <div>
-        <h4>Company</h4>
-        <a href="#testimonials">Customers</a>
-        <a href="#contact">Contact</a>
-        <a href="#contact">Careers</a>
+        <h5>Company</h5>
+        <ul>
+          <li><a href="about.html">About us</a></li>
+          <li><a href="about.html#team">Team</a></li>
+          <li><a href="about.html#timeline">Our story</a></li>
+          <li><a href="contact.html">Careers</a></li>
+        </ul>
       </div>
       <div>
-        <h4>Get in touch</h4>
-        <a href="mailto:hello@equil.io">hello@equil.io</a>
-        <a href="tel:+18005550142">+1 (800) 555-0142</a>
+        <h5>Resources</h5>
+        <ul>
+          <li><a href="index.html#insights">Insights</a></li>
+          <li><a href="solutions.html#pricing">Pricing</a></li>
+          <li><a href="contact.html#faq">FAQ</a></li>
+          <li><a href="contact.html">Support</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Contact</h5>
+        <ul>
+          <li><a href="mailto:hello@equil.io">hello@equil.io</a></li>
+          <li><a href="tel:+18005550142">+1 (800) 555-0142</a></li>
+          <li><a href="contact.html">Book a walkthrough</a></li>
+        </ul>
       </div>
     </div>
-  </div>
-  <div class="container footer-bottom">
-    <p>© <span id="year"></span> EQUIL Smart Business Solutions. All rights reserved.</p>
+
+    <div class="foot-bot">
+      <p>© <span data-year></span> EQUIL Smart Business Solutions.</p>
+      <nav aria-label="Legal">
+        <a href="contact.html">Privacy</a>
+        <a href="contact.html">Terms</a>
+        <a href="contact.html">Security</a>
+        <a href="contact.html">Status</a>
+      </nav>
+    </div>
   </div>
 </footer>
 
