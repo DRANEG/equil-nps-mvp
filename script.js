@@ -76,7 +76,7 @@
     var target = Number(el.dataset.count) || 0;
     var suffix = el.dataset.suffix || '';
     if (reduceMotion) {
-      el.textContent = target.toLocaleString() + suffix;
+      el.textContent = target.toLocaleString('ro-RO') + suffix;
       return;
     }
     var duration = 1500;
@@ -84,7 +84,7 @@
     var tick = function (now) {
       var p = Math.min((now - start) / duration, 1);
       var eased = 1 - Math.pow(1 - p, 3);
-      el.textContent = Math.round(target * eased).toLocaleString() + suffix;
+      el.textContent = Math.round(target * eased).toLocaleString('ro-RO') + suffix;
       if (p < 1) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -154,7 +154,7 @@
       var input = form.querySelector('input[type="email"]');
       if (!input || !input.value.trim()) return;
       var note = form.parentElement.querySelector('[data-subscribe-note]');
-      if (note) note.textContent = 'Thanks — confirmation sent to ' + input.value.trim() + '.';
+      if (note) note.textContent = 'Mulțumim — am trimis confirmarea la ' + input.value.trim() + '.';
       form.reset();
     });
   });
