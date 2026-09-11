@@ -1,0 +1,17 @@
+{
+  "name": "equil-nps-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sistem NPS minimal (Net Promoter Score): sondaj, colectare raspunsuri, dashboard si export.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node src/seed.js",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "license": "UNLICENSED"
+}
