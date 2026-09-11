@@ -51,24 +51,10 @@ N_VANZARI, N_TINTE, N_NPS = _n("N_VANZARI", 1000), _n("N_TINTE", 300), _n("N_NPS
 N_OPP, N_CONTACTE = _n("N_OPP", 60), _n("N_CONTACTE", 30)
 OUT = _os.environ.get("OUT", "dist/EQUIL_Growth_Intelligence_v0_2.xlsx")
 
-INK        = "1F3A3D"
-TEAL       = "12706E"
-TEAL_LIGHT = "D7EDEC"
-SAND       = "FDF6E3"
-INPUT_FILL = "FFF8DC"
-CALC_FILL  = "EEF1F3"
-WHITE      = "FFFFFF"
-GREY_TXT   = "5B6770"
-
-F_MONEY = '#,##0'
-F_PCT   = '0.0%'
-F_PCT2  = '0.00'
-F_DATE  = 'yyyy-mm-dd'
-F_NUM   = '#,##0.00'
-F_INT   = '#,##0'
-
-thin = Side(style="thin", color="C9D2D6")
-BORDER = Border(left=thin, right=thin, top=thin, bottom=thin)
+from stil import (verifica, INK, TEAL, TEAL_LIGHT, SAND, INPUT_FILL, CALC_FILL, WHITE, GREY_TXT,
+                  C_SER1, C_SER2, C_MUTED, C_ORD, C_GOOD, C_WARN, C_BAD,
+                  F_MONEY, F_PCT, F_PCT2, F_DATE, F_NUM, F_INT, BORDER,
+                  style_header, title_block, label_value, add_dv, ym, ymd, mon, pct)
 
 wb = Workbook()
 wb.remove(wb.active)
@@ -78,41 +64,10 @@ wb.calculation.fullCalcOnLoad = True
 
 # ---------------------------------------------------------------- helpers
 
-def style_header(ws, row=1, ncols=None, fill=TEAL, height=32):
-    ncols = ncols or ws.max_column
-    for c in range(1, ncols + 1):
-        cell = ws.cell(row=row, column=c)
-        cell.fill = PatternFill("solid", fgColor=fill)
-        cell.font = Font(bold=True, color=WHITE, size=10)
-        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        cell.border = BORDER
-    ws.row_dimensions[row].height = height
 
 
-def title_block(ws, title, subtitle=None, width_cols=6):
-    ws["A1"] = title
-    ws["A1"].font = Font(bold=True, size=16, color=INK)
-    ws.row_dimensions[1].height = 26
-    if subtitle:
-        ws["A2"] = subtitle
-        ws["A2"].font = Font(size=10, italic=True, color=GREY_TXT)
-        ws.row_dimensions[2].height = 16
-    ws.sheet_view.showGridLines = False
 
 
-def label_value(ws, row, label, value=None, note=None, fmt=None, input_cell=True):
-    ws.cell(row=row, column=1, value=label).font = Font(bold=True, size=10, color=INK)
-    c = ws.cell(row=row, column=2, value=value)
-    c.border = BORDER
-    c.fill = PatternFill("solid", fgColor=INPUT_FILL if input_cell else CALC_FILL)
-    c.font = Font(size=10, color="000000" if input_cell else GREY_TXT)
-    if fmt:
-        c.number_format = fmt
-    if note:
-        n = ws.cell(row=row, column=3, value=note)
-        n.font = Font(size=9, italic=True, color=GREY_TXT)
-        n.alignment = Alignment(wrap_text=True, vertical="center")
-    return c
 
 
 # -------------------------------------------------- definitia foilor de date
@@ -233,25 +188,12 @@ SCHEMA[SH_NPS] = dict(
     ])
 
 
-def ym(d):
-    """AAAA-LL fara TEXT(): codurile de format din TEXT() depind de limba
-    interfetei Excel ("yyyy-mm" nu merge intr-un Excel romanesc)."""
-    return f'YEAR({d})&"-"&RIGHT("0"&MONTH({d}),2)'
 
 
-def ymd(d):
-    """AAAA-LL-ZZ, din acelasi motiv."""
-    return f'{ym(d)}&"-"&RIGHT("0"&DAY({d}),2)'
 
 
-def mon(v, dec=0):
-    """Numar cu separator de mii, conform setarilor locale (FIXED, nu TEXT)."""
-    return f'FIXED({v},{dec})'
 
 
-def pct(v, dec=1):
-    """Procent scris ca text, independent de limba."""
-    return f'FIXED(({v})*100,{dec})&"%"'
 
 
 def cl(sheet, tech):
@@ -328,13 +270,6 @@ def lista_ref(name):
     return f"'90_LISTE'!${L}$2:${L}${n + 1}"
 
 
-def add_dv(ws, formula_range, cells, allow_blank=True):
-    dv = DataValidation(type="list", formula1=f"={formula_range}", allow_blank=allow_blank)
-    dv.error = "Valoare în afara listei permise. Alege din listă sau completează 90_LISTE."
-    dv.errorTitle = "Valoare neacceptată"
-    ws.add_data_validation(dv)
-    dv.add(cells)
-    return dv
 
 
 # ---------------------------------------------------------------- 00_GHID
@@ -1618,9 +1553,6 @@ ws.sheet_view.showGridLines = False
 # ---------------------------------------------------------------- 41_GRAFICE
 # Paleta: slot 1 albastru / slot 2 portocaliu din paleta categoriala validata;
 # gri pentru linia de referinta (tinta); rampa ordinala de albastru pentru prioritati.
-C_SER1, C_SER2, C_MUTED = "2A78D6", "EB6834", "898781"
-C_ORD = ("1C5CAB", "2A78D6", "86B6EF")          # HIGH / MEDIUM / LOW
-C_GOOD, C_WARN, C_BAD = "0CA30C", "FAB219", "D03B3B"   # promotori / pasivi / detractori
 
 ws = wb.create_sheet("41_GRAFICE")
 title_block(ws, "41 — GRAFICE",
@@ -1849,6 +1781,7 @@ wb._sheets = [wb[s] for s in order]
 wb.active = 0
 
 out = OUT
+verifica(wb)
 wb.save(out)
 print("OK ->", out)
 print("Foi:", len(wb.sheetnames))

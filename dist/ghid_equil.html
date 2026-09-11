@@ -179,6 +179,18 @@ table.compat { width: 100%; border-collapse: collapse; margin-top: 8px; font-siz
 table.compat th, table.compat td { text-align: left; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
 table.compat th { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 400; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .08em; font-size: .72rem; }
 table.compat td:first-child { font-weight: 600; white-space: nowrap; padding-right: 20px; }
+table.compara { width: 100%; border-collapse: collapse; font-size: var(--step--1); background: var(--surface); border: 1px solid var(--rule); }
+table.compara th, table.compara td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+table.compara th { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 400; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .08em; font-size: .72rem; }
+table.compara th:nth-child(2) { color: var(--accent); }
+table.compara td:first-child { color: var(--ink-faint); width: 11rem; }
+table.compara tr:last-child td { border-bottom: 0; }
+table.compara td:nth-child(2) { background: var(--accent-wash); }
+.nota-variante { margin-top: 20px; max-width: 68ch; color: var(--ink-soft); }
+@media (max-width: 640px) {
+  table.compara th, table.compara td { padding: 9px 10px; }
+  table.compara td:first-child { width: auto; }
+}
 .yes { color: var(--accent); }
 .later { color: var(--ochre); }
 
@@ -266,6 +278,7 @@ footer {
   <p class="lede">Cum duci fișierul într-o firmă: ce ceri, de la cine, cât durează —
      și ce înseamnă fiecare termen pe care îl vei rosti în discuție.</p>
   <nav class="jump">
+    <a href="#variante">Care variantă</a>
     <a href="#proces">Procesul</a>
     <a href="#fisier">Un fișier per firmă</a>
     <a href="#office">Am nevoie de Office nou?</a>
@@ -273,10 +286,43 @@ footer {
   </nav>
 </header>
 
+<section id="variante">
+  <h2>Care variantă</h2>
+  <p class="intro">Sunt două fișiere, nu unul. Varianta completă e construită pentru o firmă cu
+     echipă de vânzări și sisteme; pentru o firmă de câțiva oameni, ea cere mai mult decât dă.</p>
+  <table class="compara">
+    <tr><th></th><th>Light</th><th>Completă</th></tr>
+    <tr><td>Firma</td>
+        <td>Sub 10 angajați, până în ~500.000 lei pe an, sub 100 de clienți, fără ERP și fără CRM</td>
+        <td>Echipă de vânzări cu ținte, ERP și CRM, peste 100 de clienți</td></tr>
+    <tr><td>Foi</td><td>9</td><td>20</td></tr>
+    <tr><td>Timpul tău</td><td>~2 ore</td><td>4-6 ore</td></tr>
+    <tr><td>Cum se identifică clientul</td>
+        <td>După nume, ales dintr-o listă — fără coduri</td>
+        <td>Prin cod de client, produs și persoană</td></tr>
+    <tr><td>Produse</td><td>Scrise în cuvinte, fără analiză separată</td>
+        <td>Nomenclator propriu, cu marjă și penetrare pe produs</td></tr>
+    <tr><td>Oameni</td><td>—</td><td>Productivitate și atingere de țintă pe fiecare</td></tr>
+    <tr><td>NPS</td><td>O coloană în lista de clienți: o notă și ce a spus</td>
+        <td>Foaie separată: valuri, teme, responsabil de follow-up</td></tr>
+    <tr><td>Obiectiv</td><td>Un singur număr</td>
+        <td>Ținte pe lună, pe om, pe produs, pe client</td></tr>
+    <tr><td>Prioritizare</td><td>ACUM / URMEAZĂ / MAI TÂRZIU, calculat din clasament</td>
+        <td>Scor = impact × probabilitate × ușurință, cu praguri reglabile</td></tr>
+    <tr><td>Grafice</td><td>3</td><td>6</td></tr>
+  </table>
+  <p class="nota-variante"><strong>Se trece ușor de la una la alta.</strong> Datele din Light sunt un
+     subset al celor din varianta completă, așa că mutarea înseamnă copiere de coloane, nu reluare de
+     la zero. Semnul că firma a depășit varianta Light: începi să te întrebi <em>care om vinde mai
+     bine</em> sau <em>care produs are marjă mai mare</em> — la acele întrebări Light nu răspunde.</p>
+</section>
+
 <section id="proces">
   <h2>Procesul, pas cu pas</h2>
-  <p class="intro">Ordinea contează: fiecare pas deblochează pasul următor. Timpii sunt pentru
-     prima rulare la o firmă nouă; de la a doua lună încolo, totul se scurtează.</p>
+  <p class="intro">Pentru varianta completă. Ordinea contează: fiecare pas deblochează pasul
+     următor. Timpii sunt pentru prima rulare la o firmă nouă; de la a doua lună încolo, totul se
+     scurtează. În Light, aceiași pași există, dar comprimați în opt: profil, listă de clienți,
+     vânzări, setări, rezultate, semnale, plan, grafice.</p>
   <ol class="pasi"><li><span class="pas-nr">01</span><span class="pas-nume">Kickoff</span><span class="pas-timp">20-30 min</span><p class="pas-text">Completezi profilul firmei împreună cu clientul: ce face, cât de mare e, ce sisteme folosește, ce vrea să obțină în 12 luni.</p><span class="pas-foaie">01_FIRMA</span></li><li><span class="pas-nr">02</span><span class="pas-nume">Harta oamenilor</span><span class="pas-timp">10-15 min</span><p class="pas-text">Notezi cine deține fiecare set de date. Nu firma îți dă cifrele, ci un om anume, cu nume și email.</p><span class="pas-foaie">02_CONTACTE</span></li><li><span class="pas-nr">03</span><span class="pas-nume">Cererea de date</span><span class="pas-timp">15 min + 3-10 zile de așteptare</span><p class="pas-text">Trimiți lista de câmpuri, filtrată pe cele obligatorii. Fiecare rând spune din ce sistem se scoate și cine îl poate da. Urmează două-trei reveniri scurte.</p><span class="pas-foaie">03_CHECKLIST_DATE</span></li><li><span class="pas-nr">04</span><span class="pas-nume">Importul</span><span class="pas-timp">30-60 min curat, 2-4 ore murdar</span><p class="pas-text">Lipești exporturile în foile de date. Timpul real depinde de cât de inconsecvente sunt denumirile și de câte valori vin ca text în loc de cifre.</p><span class="pas-foaie">10-15</span></li><li><span class="pas-nr">05</span><span class="pas-nume">Parametrii</span><span class="pas-timp">5 min</span><p class="pas-text">Setezi perioada analizată, perioada de comparație și pragurile. Tot fișierul se recalculează din ele.</p><span class="pas-foaie">09_PARAMETRI</span></li><li><span class="pas-nr">06</span><span class="pas-nume">Citirea semnalelor</span><span class="pas-timp">30-45 min</span><p class="pas-text">Citești indicatorii și semnalele generate automat pe clienți, produse și oameni. Verifici dacă au sens: un semnal care contrazice realitatea din teren e de obicei o problemă de date.</p><span class="pas-foaie">20-23</span></li><li><span class="pas-nr">07</span><span class="pas-nume">Prioritizarea</span><span class="pas-timp">45-60 min</span><p class="pas-text">Transformi semnalele în oportunități cu impact estimat, probabilitate, ușurință și responsabil. Scorul le ordonează singur.</p><span class="pas-foaie">30_OPORTUNITATI</span></li><li><span class="pas-nr">08</span><span class="pas-nume">Raportul</span><span class="pas-timp">30-45 min</span><p class="pas-text">Concluziile se scriu singure din date și îți dau schița. Tu scrii varianta pentru client și alegi primele trei acțiuni.</p><span class="pas-foaie">40-41</span></li></ol>
   <div class="total">
     <strong>Total: aproximativ 4-6 ore de lucru efectiv</strong>

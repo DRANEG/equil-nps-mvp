@@ -226,6 +226,18 @@ table.compat { width: 100%; border-collapse: collapse; margin-top: 8px; font-siz
 table.compat th, table.compat td { text-align: left; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
 table.compat th { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 400; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .08em; font-size: .72rem; }
 table.compat td:first-child { font-weight: 600; white-space: nowrap; padding-right: 20px; }
+table.compara { width: 100%; border-collapse: collapse; font-size: var(--step--1); background: var(--surface); border: 1px solid var(--rule); }
+table.compara th, table.compara td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+table.compara th { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 400; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .08em; font-size: .72rem; }
+table.compara th:nth-child(2) { color: var(--accent); }
+table.compara td:first-child { color: var(--ink-faint); width: 11rem; }
+table.compara tr:last-child td { border-bottom: 0; }
+table.compara td:nth-child(2) { background: var(--accent-wash); }
+.nota-variante { margin-top: 20px; max-width: 68ch; color: var(--ink-soft); }
+@media (max-width: 640px) {
+  table.compara th, table.compara td { padding: 9px 10px; }
+  table.compara td:first-child { width: auto; }
+}
 .yes { color: var(--accent); }
 .later { color: var(--ochre); }
 
@@ -386,6 +398,7 @@ def build():
   <p class="lede">Cum duci fișierul într-o firmă: ce ceri, de la cine, cât durează —
      și ce înseamnă fiecare termen pe care îl vei rosti în discuție.</p>
   <nav class="jump">
+    <a href="#variante">Care variantă</a>
     <a href="#proces">Procesul</a>
     <a href="#fisier">Un fișier per firmă</a>
     <a href="#office">Am nevoie de Office nou?</a>
@@ -393,10 +406,43 @@ def build():
   </nav>
 </header>
 
+<section id="variante">
+  <h2>Care variantă</h2>
+  <p class="intro">Sunt două fișiere, nu unul. Varianta completă e construită pentru o firmă cu
+     echipă de vânzări și sisteme; pentru o firmă de câțiva oameni, ea cere mai mult decât dă.</p>
+  <table class="compara">
+    <tr><th></th><th>Light</th><th>Completă</th></tr>
+    <tr><td>Firma</td>
+        <td>Sub 10 angajați, până în ~500.000 lei pe an, sub 100 de clienți, fără ERP și fără CRM</td>
+        <td>Echipă de vânzări cu ținte, ERP și CRM, peste 100 de clienți</td></tr>
+    <tr><td>Foi</td><td>9</td><td>20</td></tr>
+    <tr><td>Timpul tău</td><td>~2 ore</td><td>4-6 ore</td></tr>
+    <tr><td>Cum se identifică clientul</td>
+        <td>După nume, ales dintr-o listă — fără coduri</td>
+        <td>Prin cod de client, produs și persoană</td></tr>
+    <tr><td>Produse</td><td>Scrise în cuvinte, fără analiză separată</td>
+        <td>Nomenclator propriu, cu marjă și penetrare pe produs</td></tr>
+    <tr><td>Oameni</td><td>—</td><td>Productivitate și atingere de țintă pe fiecare</td></tr>
+    <tr><td>NPS</td><td>O coloană în lista de clienți: o notă și ce a spus</td>
+        <td>Foaie separată: valuri, teme, responsabil de follow-up</td></tr>
+    <tr><td>Obiectiv</td><td>Un singur număr</td>
+        <td>Ținte pe lună, pe om, pe produs, pe client</td></tr>
+    <tr><td>Prioritizare</td><td>ACUM / URMEAZĂ / MAI TÂRZIU, calculat din clasament</td>
+        <td>Scor = impact × probabilitate × ușurință, cu praguri reglabile</td></tr>
+    <tr><td>Grafice</td><td>3</td><td>6</td></tr>
+  </table>
+  <p class="nota-variante"><strong>Se trece ușor de la una la alta.</strong> Datele din Light sunt un
+     subset al celor din varianta completă, așa că mutarea înseamnă copiere de coloane, nu reluare de
+     la zero. Semnul că firma a depășit varianta Light: începi să te întrebi <em>care om vinde mai
+     bine</em> sau <em>care produs are marjă mai mare</em> — la acele întrebări Light nu răspunde.</p>
+</section>
+
 <section id="proces">
   <h2>Procesul, pas cu pas</h2>
-  <p class="intro">Ordinea contează: fiecare pas deblochează pasul următor. Timpii sunt pentru
-     prima rulare la o firmă nouă; de la a doua lună încolo, totul se scurtează.</p>
+  <p class="intro">Pentru varianta completă. Ordinea contează: fiecare pas deblochează pasul
+     următor. Timpii sunt pentru prima rulare la o firmă nouă; de la a doua lună încolo, totul se
+     scurtează. În Light, aceiași pași există, dar comprimați în opt: profil, listă de clienți,
+     vânzări, setări, rezultate, semnale, plan, grafice.</p>
   <ol class="pasi">{''.join(pasi)}</ol>
   <div class="total">
     <strong>Total: aproximativ 4-6 ore de lucru efectiv</strong>

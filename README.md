@@ -5,11 +5,17 @@ ale unei firme în KPI, semnale de risc și oportunități de creștere prioriti
 
 ## Ce e în repo
 
+Sunt două variante ale fișierului, pentru două mărimi de firmă.
+
 | Cale | Ce conține |
 |---|---|
-| `dist/EQUIL_Growth_Intelligence_v0_2.xlsx` | Fișierul de lucru, gata de folosit |
-| `tools/build_equil_workbook.py` | Generatorul fișierului (sursa adevărului) |
-| `tools/test_workbook.py` | Test automat: construiește o versiune mică, o populează cu date și verifică valorile calculate |
+| `dist/EQUIL_Growth_Intelligence_v0_2.xlsx` | Varianta completă (20 de foi) |
+| `dist/EQUIL_Light_v0_2.xlsx` | Varianta Light, pentru firme mici (9 foi) |
+| `tools/build_equil_workbook.py` | Generatorul variantei complete |
+| `tools/build_equil_light.py` | Generatorul variantei Light |
+| `tools/stil.py` | Culorile, formatele și helperii comuni ambelor variante |
+| `tools/test_workbook.py` | Test automat pentru varianta completă |
+| `tools/test_light.py` | Test automat pentru varianta Light |
 | `tools/audit_formulas.py` | Audit static: paranteze, referințe, funcții incompatibile cu Excel 2016 |
 | `tools/glosar.py` | Cei 66 de termeni din foaia `04_DICTIONAR` |
 | `tools/build_ghid_html.py` | Generează ghidul HTML (glosar căutabil + proces + timpi) din aceleași date |
@@ -21,9 +27,11 @@ regenerează, ca să nu se piardă modificările:
 ```bash
 pip install openpyxl
 python3 tools/build_equil_workbook.py     # -> dist/EQUIL_Growth_Intelligence_v0_2.xlsx
+python3 tools/build_equil_light.py        # -> dist/EQUIL_Light_v0_2.xlsx
 pip install formulas                      # doar pentru test
 python3 tools/audit_formulas.py           # verificare statică a formulelor
 python3 tools/test_workbook.py            # verifică valorile calculate pe date de test
+python3 tools/test_light.py               # același test, pentru varianta Light
 ```
 
 ## Structura workbook-ului (20 de foi)
@@ -64,6 +72,20 @@ Fără funcții dinamice (`UNIQUE`, `FILTER`, `LET`, `IFS`, `MAXIFS`) și fără
 coduri de format — acelea depind de limba interfeței Excel. Funcționează în Excel 2016+,
 Microsoft 365, LibreOffice Calc și Google Sheets, în interfață română sau engleză.
 `tools/audit_formulas.py` refuză build-ul dacă apare vreuna dintre funcțiile interzise.
+
+## Varianta Light (9 foi)
+
+Pentru firme sub 10 angajați, până în ~500.000 lei pe an, sub 100 de clienți, fără ERP și fără CRM.
+Aceeași logică, dar fără coduri de client sau produs (clientul se alege după nume dintr-o listă),
+fără analiză pe produse și pe oameni, cu NPS-ul ca o coloană în lista de clienți în loc de o foaie
+separată, și cu prioritizare prin clasament (ACUM / URMEAZĂ / MAI TÂRZIU) în loc de praguri de scor.
+Aproximativ 2 ore de completat, față de 4-6.
+
+`00_START` · `01_FIRMA` · `02_SETARI` · `10_VANZARI` · `11_CLIENTI` · `20_REZULTATE` ·
+`21_CE_SE_INTAMPLA` · `30_PLAN` · `40_GRAFICE`
+
+Datele din Light sunt un subset al celor din varianta completă, deci trecerea înseamnă copiere de
+coloane, nu reluare de la zero.
 
 ## Un fișier pentru fiecare firmă
 
