@@ -1,8 +1,9 @@
 import { html, send, redirect, readForm, csv, parseCookies, sessionValue, safeEqual } from '../http.js';
 import {
   loginPage, dashboardPage, campaignsPage, campaignDetailPage, responsesPage,
-  locationsPage, postersPage,
+  locationsPage, postersPage, alertsPage,
 } from '../views/admin.js';
+import { alertConfigFromEnv, alertsDescription } from '../alerts.js';
 import { qrSvg } from '../qr.js';
 import { noticePage } from '../views/survey.js';
 import { summarize, marginOfError } from '../nps.js';
@@ -14,6 +15,7 @@ import {
   QUESTION_KINDS, addQuestion, addStandardQuestions, getQuestion, deleteQuestion, moveQuestion,
   listQuestions, questionResults, breakdownByLocation,
   createLocation, listLocations, setLocationActive,
+  openDetractors, countOpenDetractors, listAlertLog, setCampaignAlerts,
 } from '../db.js';
 import { runSendPass } from '../scheduler.js';
 
@@ -67,6 +69,7 @@ export function dashboard(req, res, { db, url, publicUrl }) {
       campaignId,
       invitesSent,
       publicUrl,
+      openAlerts: countOpenDetractors(db),
     }),
   );
 }
@@ -194,9 +197,10 @@ export function responsesCsv(req, res, { db, url }) {
   return csv(res, 'raspunsuri-nps.csv', rows);
 }
 
-export function responseClose(req, res, { db, params }) {
+export async function responseClose(req, res, { db, params }) {
+  const form = await readForm(req);
   markResponseClosed(db, Number(params.id), true);
-  return redirect(res, '/admin/raspunsuri');
+  return redirect(res, form.de === 'alerte' ? '/admin/alerte' : '/admin/raspunsuri');
 }
 
 /* ---------------------------------- utilitare -------------------------------- */
@@ -358,4 +362,28 @@ export function qrImage(req, res, { url }) {
     'Content-Type': 'image/svg+xml; charset=utf-8',
     'Cache-Control': 'no-store',
   });
+}
+
+/* --------------------------- alerte la detractori ---------------------------- */
+
+export function alertsList(req, res, { db, publicUrl, alertConfig }) {
+  return html(
+    res,
+    200,
+    alertsPage({
+      detractors: openDetractors(db),
+      log: listAlertLog(db, 15),
+      transport: alertsDescription(alertConfig || alertConfigFromEnv()),
+      publicUrl,
+      campaigns: listCampaigns(db),
+    }),
+  );
+}
+
+// Comutatorul de alerte pentru o campanie (unele campanii nu merita alerte
+// imediate, de exemplu un sondaj vechi redeschis pentru arhiva).
+export async function campaignAlerts(req, res, { db, params }) {
+  const form = await readForm(req);
+  setCampaignAlerts(db, Number(params.id), form.alerte === '1');
+  return redirect(res, `/admin/campanii/${params.id}`);
 }

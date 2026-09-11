@@ -21,7 +21,7 @@ export function loginPage(error = null) {
 
 export function dashboardPage({
   summary, moe, trend, segments, locations = [], questions = [], recent,
-  campaigns, campaignId, invitesSent, publicUrl,
+  campaigns, campaignId, invitesSent, publicUrl, openAlerts = 0,
 }) {
   const filter = campaignSelect(campaigns, campaignId, '/admin');
   const responseRate = invitesSent ? Math.round((summary.total / invitesSent) * 100) : null;
@@ -35,7 +35,13 @@ ${filter}
         summary.nps === null ? 'fără răspunsuri' : `${npsLabel(summary.nps)}${moe === null ? '' : ` &plusmn; ${moe}`}`)}
   ${kpi('Răspunsuri', summary.total, responseRate === null ? 'link public' : `${responseRate}% rată de răspuns`)}
   ${kpi('Promotori', `${summary.promoterPct}%`, `${summary.promoters} persoane`)}
-  ${kpi('Detractori', `${summary.detractorPct}%`, `${summary.detractors} persoane`)}
+  ${kpi(
+    'Detractori',
+    `${summary.detractorPct}%`,
+    openAlerts
+      ? `<a href="/admin/alerte">${openAlerts} de contactat</a>`
+      : `${summary.detractors} persoane`,
+  )}
 </div>
 
 <div class="card">
@@ -75,7 +81,7 @@ ${questionResultsCard(questions)}
 
 <p class="small muted">Link public de test: <code>${escapeHtml(publicUrl)}/s/&lt;slug-campanie&gt;</code></p>`;
 
-  return page({ title: 'Dashboard NPS', body, nav: adminNav('home') });
+  return page({ title: 'Dashboard NPS', body, nav: adminNav('home', openAlerts) });
 }
 
 export function campaignsPage({ campaigns, publicUrl, flash }) {
@@ -298,6 +304,17 @@ function emailCard(campaign, email) {
     </form>
     <span class="small ${campaign.auto_send ? '' : 'muted'}">
       Trimitere automată: <strong>${campaign.auto_send ? 'pornită' : 'oprită'}</strong>
+    </span>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <form method="POST" action="/admin/campanii/${campaign.id}/alerte">
+      <input type="hidden" name="alerte" value="${campaign.alert_detractors ? 0 : 1}">
+      <button class="btn ghost" type="submit">
+        ${campaign.alert_detractors ? 'Oprește alertele la detractori' : 'Pornește alertele la detractori'}
+      </button>
+    </form>
+    <span class="small ${campaign.alert_detractors ? '' : 'muted'}">
+      Alertă imediată la scor 0–6: <strong>${campaign.alert_detractors ? 'pornită' : 'oprită'}</strong>
     </span>
   </div>
   <table style="margin-top:16px">
@@ -643,4 +660,106 @@ export function postersPage({ posters, campaignName }) {
 <div class="bar"><button onclick="window.print()">Printează</button></div>
 ${sheets || '<section class="poster"><h1>Nicio locație de printat</h1></section>'}
 </body></html>`;
+}
+
+/* ---------------------------- alerte la detractori ---------------------------- */
+
+export function alertsPage({ detractors, log, transport, publicUrl, campaigns }) {
+  const carduri = detractors.length
+    ? detractors
+        .map((r) => {
+          const cine = r.contact_name || r.email || 'Client anonim';
+          const raspunsuri = (r.answers || []).filter((a) => a.value);
+          return `<div class="card" style="border-left:3px solid var(--bad)">
+            <div class="row" style="justify-content:space-between;align-items:flex-start">
+              <div>
+                <span class="tag detractor" style="font-size:14px">${r.score}/10</span>
+                <strong style="margin-left:8px">${escapeHtml(cine)}</strong>
+                ${r.company ? `<span class="small muted"> · ${escapeHtml(r.company)}</span>` : ''}
+                ${r.location_name ? `<span class="small muted"> · 📍 ${escapeHtml(r.location_name)}</span>` : ''}
+              </div>
+              <span class="small muted">${escapeHtml(r.created_at)}</span>
+            </div>
+            ${
+              r.comment
+                ? `<p style="margin:10px 0 0;font-size:16px;border-left:3px solid var(--line);padding-left:12px">
+                     ${escapeHtml(r.comment)}</p>`
+                : '<p class="muted small" style="margin:10px 0 0">(fără comentariu)</p>'
+            }
+            ${
+              raspunsuri.length
+                ? `<p class="small muted" style="margin:10px 0 0">${raspunsuri
+                    .map((a) => `${escapeHtml(a.text)}: <strong>${escapeHtml(a.value)}</strong>`)
+                    .join(' · ')}</p>`
+                : ''
+            }
+            <div class="row" style="margin-top:12px">
+              ${
+                r.email
+                  ? `<a class="btn" href="mailto:${escapeHtml(r.email)}?subject=${encodeURIComponent('Despre feedbackul tău')}">Răspunde pe email</a>`
+                  : ''
+              }
+              <form method="POST" action="/admin/raspunsuri/${r.id}/inchide">
+                <input type="hidden" name="de" value="alerte">
+                <button class="btn ghost" type="submit">Am rezolvat, închide bucla</button>
+              </form>
+              <span class="small muted">${escapeHtml(r.campaign_name)}</span>
+            </div>
+          </div>`;
+        })
+        .join('')
+    : `<div class="card"><p class="muted" style="margin:0">Niciun detractor deschis. 🎉<br>
+       <span class="small">Aici apar automat clienții care dau 0–6, până când cineva revine la ei.</span></p></div>`;
+
+  const jurnal = log.length
+    ? log
+        .map(
+          (a) => `<tr>
+            <td class="small">${escapeHtml(a.created_at)}</td>
+            <td class="small">${escapeHtml(a.channel)}</td>
+            <td class="small">${escapeHtml(a.target || '—')}</td>
+            <td class="small">${
+              a.status === 'trimis'
+                ? '<span class="tag promoter">trimis</span>'
+                : a.status === 'sarit'
+                  ? `<span class="tag passive" title="${escapeHtml(a.detail || '')}">sărit</span>`
+                  : `<span class="tag detractor" title="${escapeHtml(a.detail || '')}">eroare</span>`
+            }</td>
+          </tr>`,
+        )
+        .join('')
+    : '<tr><td colspan="4" class="muted">Nicio alertă trimisă încă.</td></tr>';
+
+  const body = `
+<h1>Alerte la detractori</h1>
+<p class="sub">Fiecare client care dă 0–6 declanșează imediat o alertă și rămâne în această listă
+până când cineva revine la el. Ținta: răspuns în 48 de ore.</p>
+
+<div class="card">
+  <div class="row" style="justify-content:space-between">
+    <div>
+      <div class="name small muted">DETRACTORI DESCHIȘI</div>
+      <div class="value" style="font-size:28px;font-weight:700">${detractors.length}</div>
+    </div>
+    <div class="small muted" style="max-width:420px;text-align:right">
+      Alerte trimise prin: <strong>${escapeHtml(transport)}</strong>
+    </div>
+  </div>
+</div>
+
+${carduri}
+
+<div class="card">
+  <h2 style="margin-top:0">Jurnalul alertelor</h2>
+  <table>
+    <thead><tr><th>Data</th><th>Canal</th><th>Destinatar</th><th>Stare</th></tr></thead>
+    <tbody>${jurnal}</tbody>
+  </table>
+  <p class="small muted" style="margin-top:10px">
+    Alertele se configurează din <code>.env</code>: <code>ALERT_EMAILS</code> (una sau mai multe adrese)
+    și <code>ALERT_WEBHOOK_URL</code> (Slack, Telegram sau Zapier, pentru notificare pe telefon).
+  </p>
+</div>`;
+
+  return page({ title: 'Alerte', body, nav: adminNav('alerts', detractors.length) });
 }

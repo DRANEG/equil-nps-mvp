@@ -21,9 +21,9 @@ npm start                 # pornește pe http://localhost:3000
 - Sondaj public demo: <http://localhost:3000/s/demo-nps>
 - Administrare: <http://localhost:3000/admin> (parola = `ADMIN_TOKEN` din `.env`)
 
-Teste: `npm test` (59 de teste — calculul NPS, fluxul de răspuns, autentificare, export,
+Teste: `npm test` (76 de teste — calculul NPS, fluxul de răspuns, autentificare, export,
 protocolul SMTP, robotul de trimitere, dezabonarea, întrebările proprii, locațiile,
-generatorul de coduri QR și fișierele aplicației instalabile).
+generatorul de coduri QR, fișierele aplicației instalabile și alertele la detractori).
 
 ## 2. Ce face
 
@@ -39,6 +39,7 @@ generatorul de coduri QR și fișierele aplicației instalabile).
 | Dezabonare | Link în fiecare email + buton „Unsubscribe” al Gmail/Outlook; dezabonații nu mai primesc nimic. |
 | Dashboard | Scor NPS, marjă de eroare, rată de răspuns, distribuție 0–10, evoluție lunară, defalcare pe segment, ultimele comentarii. |
 | Răspunsuri | Listă filtrabilă, export CSV și buton „Închide bucla” pentru cazurile în care ai revenit către client. |
+| Alerte | Orice scor 0–6 declanșează imediat un email către echipă și un webhook (Slack/Telegram), plus o listă de lucru cu detractorii deschiși. |
 | API | `POST /api/raspunsuri` cu JSON, pentru widget în aplicație sau integrare cu alt sistem. |
 
 ## 3. Cum se calculează scorul
@@ -166,7 +167,49 @@ Dacă în magazin nu e semnal bun, pagina sondajului se încarcă din memoria te
 se salvează local și pleacă singur când revine conexiunea. Clientul vede „răspunsul tău este salvat”,
 nu o eroare.
 
-## 7. Aplicație instalabilă pe telefon (PWA)
+## 7. Alerte la detractori
+
+Un detractor care așteaptă trei zile e un client pierdut. De aceea, la fiecare răspuns cu
+**scor 0–6** pleacă imediat o alertă, iar clientul rămâne într-o listă de lucru până când
+cineva revine la el.
+
+### Cele două canale
+
+```bash
+ALERT_EMAILS=sef@firma.ro, suport@firma.ro      # email către echipă
+ALERT_WEBHOOK_URL=https://hooks.slack.com/...   # notificare pe telefon
+```
+
+- **Email**: scorul, ce a scris omul, răspunsurile la întrebările suplimentare, locația și un
+  buton **„Răspunde clientului”** (deschide direct emailul, de pe telefon).
+- **Webhook**: mesaj gata formatat, compatibil direct cu **Slack** (câmpul `text`). Pentru
+  **Telegram** pui adresa `https://api.telegram.org/bot<TOKEN>/sendMessage?chat_id=<ID>`; merge și
+  cu Zapier, Make sau un endpoint propriu — corpul conține și câmpuri structurate
+  (`scor`, `comentariu`, `locatie`, `campanie`, `email`, `link`).
+
+Dacă nu configurezi niciunul, nu se trimite nimic — dar detractorii apar oricum în **Admin → Alerte**.
+
+### Pagina Alerte
+
+**Admin → Alerte** este lista de lucru: fiecare detractor la care nu s-a revenit, cu scorul,
+comentariul, locația și două butoane — „Răspunde pe email” și „Am rezolvat, închide bucla”.
+Numărul din bara de sus îți arată câți te așteaptă.
+
+### Protecții
+
+- **O singură alertă per răspuns.** Marcajul se pune înainte de trimitere, deci nici robotul,
+  nici o actualizare a aceluiași răspuns nu duplică alerta.
+- **Limită orară** (`ALERT_MAX_PER_HOUR`, implicit 20): dacă intră brusc 200 de răspunsuri
+  proaste, nu primești 200 de emailuri. Restul rămân în pagina de alerte, iar limita e notată în jurnal.
+- **Nu încetinește clientul.** Alertele pleacă în fundal: răspunsul e confirmat în câteva
+  milisecunde, indiferent cât durează emailul.
+- **Dacă niciun canal nu reușește**, alerta se eliberează și se reîncearcă la următorul răspuns
+  — și, oricum, apare în jurnal cu motivul exact.
+- **Pragul se poate cobori** (`ALERT_MAX_SCORE=3`) dacă primești prea multe alerte și vrei doar
+  cazurile grave.
+- Se pot opri **per campanie**, din pagina campaniei.
+
+## 8. Aplicație instalabilă pe telefon (PWA)
 
 Nu e nevoie de App Store și nici de cont de developer.
 
@@ -184,7 +227,7 @@ scurtături către Dashboard / Răspunsuri / Locații) și `public/sw.js` (servi
 sondaj merg offline, restul arată o pagină clară „Nu ai conexiune”). Paginile de administrare nu se
 păstrează în cache, ca să nu vezi date vechi.
 
-## 8. Structura codului
+## 9. Structura codului
 
 ```
 src/
@@ -196,6 +239,7 @@ src/
   routes/admin.js    dashboard, campanii, invitații, exporturi
   views/             HTML-ul (layout + CSS, sondaj, admin)
   qr.js              generator de coduri QR (SVG), scris de la zero
+  alerts.js          alerta imediata la detractori (email + webhook)
   mailer.js          client SMTP propriu (fara dependente) + modul .eml pentru probe
   emails.js          șabloanele de invitație și de reamintire
   scheduler.js       robotul: ce se trimite, când și cu ce protecții
@@ -221,6 +265,7 @@ Rute principale:
 | GET | `/admin` | dashboard (necesită autentificare) |
 | GET | `/admin/raspunsuri.csv` | export răspunsuri |
 | GET | `/s/:slug?loc=<locație>` | sondaj deschis prin scanarea unui cod QR |
+| GET | `/admin/alerte` | detractorii deschiși + jurnalul alertelor |
 | GET | `/admin/locatii` | locații + coduri QR |
 | GET | `/admin/afise` | afișele de printat (A4, un cod QR per locație) |
 | GET | `/manifest.webmanifest`, `/sw.js` | fișierele aplicației instalabile |
@@ -228,7 +273,7 @@ Rute principale:
 | POST | `/dezabonare/:token` | dezabonarea propriu-zisă (și butonul din Gmail) |
 | GET | `/healthz` | verificare de sănătate pentru hosting |
 
-## 9. Punere în producție
+## 10. Punere în producție
 
 - Setează `ADMIN_TOKEN` (parolă lungă) și `PUBLIC_URL` (domeniul real, cu `https://`).
 - Rulează în spatele unui reverse proxy cu TLS (Caddy, Nginx) — cookie-ul de admin e
@@ -238,7 +283,7 @@ Rute principale:
   `sqlite3 data/nps.db ".backup backup.db"`).
 - Serviciu systemd / container: comanda e `node src/server.js`, nimic de compilat.
 
-## 10. Limite cunoscute (conștiente, pentru un MVP)
+## 11. Limite cunoscute (conștiente, pentru un MVP)
 
 - O singură parolă de admin, fără conturi per utilizator.
 - Fără aplicație nativă în App Store / Google Play: aplicația se instalează ca PWA, direct din

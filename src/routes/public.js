@@ -1,6 +1,7 @@
 import { html, json, redirect, readForm, escapeHtml } from '../http.js';
 import { surveyPage, thanksPage, noticePage, offlinePage } from '../views/survey.js';
 import { categorize, isValidScore } from '../nps.js';
+import { alertInBackground } from '../alerts.js';
 import {
   getCampaignBySlug, getInviteByToken, saveResponse, unsubscribeByToken,
   listQuestions, saveAnswers, getLocationBySlug, getCampaign,
@@ -60,9 +61,10 @@ export function surveyByToken(req, res, { db, params, url }) {
 }
 
 // POST /raspunde — trimiterea formularului (token sau slug).
-export async function submitResponse(req, res, { db }) {
+export async function submitResponse(req, res, ctx) {
+  const { db } = ctx;
   const form = await readForm(req);
-  const result = record(db, form);
+  const result = record(db, form, ctx);
   if (result.error) {
     return html(res, 400, noticePage('Răspuns invalid', result.error));
   }
@@ -70,9 +72,10 @@ export async function submitResponse(req, res, { db }) {
 }
 
 // POST /api/raspunsuri — acelasi lucru, pentru integrari (widget, app mobil).
-export async function submitResponseApi(req, res, { db }) {
+export async function submitResponseApi(req, res, ctx) {
+  const { db } = ctx;
   const form = await readForm(req);
-  const result = record(db, form);
+  const result = record(db, form, ctx);
   if (result.error) return json(res, 400, { ok: false, error: result.error });
   return json(res, 201, {
     ok: true,
@@ -99,7 +102,7 @@ export function offline(req, res) {
 }
 
 // Logica partajata de formular si API.
-function record(db, form) {
+function record(db, form, ctx = {}) {
   const score = Number(form.score ?? form.scor);
   if (!isValidScore(score)) return { error: 'Scorul trebuie să fie un număr întreg între 0 și 10.' };
   const comment = typeof form.comment === 'string' ? form.comment.trim().slice(0, 2000) : null;
@@ -122,6 +125,7 @@ function record(db, form) {
       locationId: location ? location.id : null,
     });
     storeAnswers(db, invite.campaign_id, response.id, form);
+    anunta(db, response, ctx);
     return { response };
   }
 
@@ -137,7 +141,18 @@ function record(db, form) {
     locationId: location ? location.id : null,
   });
   storeAnswers(db, campaign.id, response.id, form);
+  anunta(db, response, ctx);
   return { response };
+}
+
+// Alerta pentru detractori pleaca in fundal: clientul nu asteapta dupa email.
+function anunta(db, response, ctx) {
+  if (!ctx || response.category !== 'detractor') return;
+  alertInBackground(db, response.id, {
+    mailer: ctx.mailer,
+    publicUrl: ctx.publicUrl,
+    config: ctx.alertConfig,
+  });
 }
 
 // Locatia vine din codul QR scanat (?loc=...) sau din campul ascuns al formularului.

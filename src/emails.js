@@ -137,3 +137,109 @@ function shell({ brand, salut, intro, question, link, unsubscribe, cta, footerNo
 </table>
 </body></html>`;
 }
+
+// Alerta trimisa echipei cand apare un detractor. Scopul e sa se poata reactiona
+// direct de pe telefon: scorul, ce a scris omul si un buton de raspuns.
+export function detractorAlertEmail({ response, publicUrl, brand = brandName() }) {
+  const cine = response.contact_name || response.email || 'Client anonim';
+  const unde = response.location_name ? ` · ${response.location_name}` : '';
+  const detalii = [
+    ['Scor', `${response.score}/10`],
+    ['Client', cine],
+    ['Email', response.email || '—'],
+    ['Companie', response.company || '—'],
+    ['Locație', response.location_name || '—'],
+    ['Campanie', response.campaign_name],
+    ['Data', response.created_at],
+  ];
+
+  const raspunsuri = (response.answers || []).filter((a) => a.value);
+  const link = `${publicUrl}/admin/alerte`;
+  const mailto = response.email
+    ? `mailto:${response.email}?subject=${encodeURIComponent('Despre feedbackul tău')}`
+    : null;
+
+  const html = `<!doctype html><html lang="ro"><body style="margin:0;background:#f6f7f9;padding:24px 12px">
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%"><tr><td align="center">
+<table role="presentation" cellpadding="0" cellspacing="0" width="560"
+       style="max-width:560px;background:#fff;border:1px solid #e4e7ec;border-radius:12px;
+              font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#16191d">
+  <tr><td style="padding:20px 24px;background:#fdeae7;border-radius:12px 12px 0 0">
+    <div style="font-size:13px;color:#c0392b;font-weight:700;letter-spacing:.5px">DETRACTOR &mdash; SCOR ${response.score}/10</div>
+    <div style="font-size:18px;font-weight:700;margin-top:4px">${escapeHtml(cine)}${escapeHtml(unde)}</div>
+  </td></tr>
+  ${
+    response.comment
+      ? `<tr><td style="padding:18px 24px 0">
+          <div style="border-left:3px solid #c0392b;padding:4px 0 4px 12px;font-size:16px;line-height:1.5">
+            ${escapeHtml(response.comment)}
+          </div></td></tr>`
+      : ''
+  }
+  ${
+    raspunsuri.length
+      ? `<tr><td style="padding:14px 24px 0">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="font-size:14px">
+            ${raspunsuri
+              .map(
+                (a) => `<tr><td style="padding:3px 0;color:#6b7280">${escapeHtml(a.text)}</td>
+                        <td style="padding:3px 0;text-align:right;font-weight:600">${escapeHtml(a.value)}</td></tr>`,
+              )
+              .join('')}
+          </table></td></tr>`
+      : ''
+  }
+  <tr><td style="padding:14px 24px 0">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="font-size:13px;color:#6b7280">
+      ${detalii
+        .map(
+          ([k, v]) => `<tr><td style="padding:2px 0">${escapeHtml(k)}</td>
+                       <td style="padding:2px 0;text-align:right;color:#16191d">${escapeHtml(v)}</td></tr>`,
+        )
+        .join('')}
+    </table></td></tr>
+  <tr><td style="padding:18px 24px 24px">
+    ${
+      mailto
+        ? `<a href="${mailto}" style="display:inline-block;background:#2f5bea;color:#fff;text-decoration:none;
+             padding:11px 18px;border-radius:8px;font-weight:600;font-size:15px">Răspunde clientului</a>`
+        : ''
+    }
+    <a href="${escapeHtml(link)}" style="display:inline-block;padding:11px 14px;color:#2f5bea;
+       text-decoration:none;font-weight:600;font-size:15px">Vezi în ${escapeHtml(brand)} NPS</a>
+  </td></tr>
+  <tr><td style="padding:12px 24px 20px;border-top:1px solid #e4e7ec;font-size:12px;color:#6b7280">
+    Regula casei: un detractor primește un telefon sau un email în cel mult 48 de ore.
+  </td></tr>
+</table></td></tr></table></body></html>`;
+
+  const text = [
+    `DETRACTOR — scor ${response.score}/10`,
+    `${cine}${unde}`,
+    '',
+    response.comment ? `„${response.comment}”` : '(fără comentariu)',
+    '',
+    ...raspunsuri.map((a) => `${a.text}: ${a.value}`),
+    '',
+    ...detalii.map(([k, v]) => `${k}: ${v}`),
+    '',
+    `Vezi în aplicație: ${link}`,
+  ].join('\n');
+
+  return {
+    subject: `⚠ Detractor ${response.score}/10 — ${cine}${unde}`,
+    html,
+    text,
+  };
+}
+
+// Mesajul scurt pentru webhook (Slack, Telegram, Zapier).
+export function detractorAlertText({ response, publicUrl }) {
+  const cine = response.contact_name || response.email || 'Client anonim';
+  const unde = response.location_name ? ` · ${response.location_name}` : '';
+  return [
+    `⚠ Detractor ${response.score}/10 — ${cine}${unde}`,
+    response.comment ? `„${response.comment}”` : '(fără comentariu)',
+    `${response.campaign_name} · ${publicUrl}/admin/alerte`,
+  ].join('\n');
+}

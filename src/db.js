@@ -86,6 +86,19 @@ CREATE TABLE IF NOT EXISTS answers (
 CREATE INDEX IF NOT EXISTS idx_questions_campaign ON questions(campaign_id, position);
 CREATE INDEX IF NOT EXISTS idx_answers_question ON answers(question_id);
 
+-- Alertele trimise la aparitia unui detractor (email, webhook).
+CREATE TABLE IF NOT EXISTS alert_log (
+  id          INTEGER PRIMARY KEY,
+  response_id INTEGER REFERENCES responses(id) ON DELETE CASCADE,
+  channel     TEXT NOT NULL,
+  target      TEXT,
+  status      TEXT NOT NULL,
+  detail      TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_alert_log_created ON alert_log(created_at);
+
 -- Istoricul trimiterilor: fiecare incercare, reusita sau nu.
 CREATE TABLE IF NOT EXISTS email_log (
   id          INTEGER PRIMARY KEY,
@@ -110,6 +123,8 @@ const MIGRATIONS = [
   ['invites', 'reminder_sent_at', 'TEXT'],
   ['invites', 'send_error', 'TEXT'],
   ['responses', 'location_id', 'INTEGER REFERENCES locations(id) ON DELETE SET NULL'],
+  ['responses', 'alerted_at', 'TEXT'],
+  ['campaigns', 'alert_detractors', 'INTEGER NOT NULL DEFAULT 1'],
 ];
 
 export function openDb(file = process.env.NPS_DB || './data/nps.db') {
@@ -186,6 +201,10 @@ export function setCampaignActive(db, id, active) {
 
 export function setCampaignAutoSend(db, id, autoSend) {
   db.prepare('UPDATE campaigns SET auto_send = ? WHERE id = ?').run(autoSend ? 1 : 0, id);
+}
+
+export function setCampaignAlerts(db, id, alerts) {
+  db.prepare('UPDATE campaigns SET alert_detractors = ? WHERE id = ?').run(alerts ? 1 : 0, id);
 }
 
 /* ---------------------------------- contacte --------------------------------- */
@@ -659,4 +678,91 @@ export function questionResults(db, campaignId) {
         : null;
     return { ...q, total, counts, average };
   });
+}
+
+/* ----------------------------------- alerte ---------------------------------- */
+
+// Un raspuns cu tot contextul necesar unei alerte: cine, de unde, ce a scris.
+export function getResponseWithContext(db, id) {
+  const response = db
+    .prepare(
+      `SELECT r.*, c.email, c.name AS contact_name, c.company, c.segment,
+              ca.name AS campaign_name, ca.slug AS campaign_slug, ca.alert_detractors,
+              l.name AS location_name
+       FROM responses r
+       LEFT JOIN contacts c  ON c.id = r.contact_id
+       JOIN campaigns ca     ON ca.id = r.campaign_id
+       LEFT JOIN locations l ON l.id = r.location_id
+       WHERE r.id = ?`,
+    )
+    .get(id);
+  if (!response) return null;
+  return { ...response, answers: listAnswers(db, id) };
+}
+
+// Rezervam alerta inainte de trimitere, ca doua procese sa nu alerteze de doua ori.
+export function claimAlert(db, responseId) {
+  const info = db
+    .prepare("UPDATE responses SET alerted_at = datetime('now') WHERE id = ? AND alerted_at IS NULL")
+    .run(responseId);
+  return info.changes === 1;
+}
+
+export function releaseAlert(db, responseId) {
+  db.prepare('UPDATE responses SET alerted_at = NULL WHERE id = ?').run(responseId);
+}
+
+export function logAlert(db, { responseId, channel, target = null, status, detail = null }) {
+  db.prepare(
+    'INSERT INTO alert_log (response_id, channel, target, status, detail) VALUES (?, ?, ?, ?, ?)',
+  ).run(responseId, channel, target, status, detail ? String(detail).slice(0, 500) : null);
+}
+
+export function countAlertsSince(db, minutes) {
+  return db
+    .prepare(
+      `SELECT COUNT(DISTINCT response_id) AS n FROM alert_log
+       WHERE status = 'trimis' AND created_at >= datetime('now', ?)`,
+    )
+    .get(`-${Math.round(minutes)} minutes`).n;
+}
+
+export function listAlertLog(db, limit = 20) {
+  return db
+    .prepare(
+      `SELECT a.*, r.score, c.email AS contact_email
+       FROM alert_log a
+       LEFT JOIN responses r ON r.id = a.response_id
+       LEFT JOIN contacts c  ON c.id = r.contact_id
+       ORDER BY a.created_at DESC, a.id DESC LIMIT ?`,
+    )
+    .all(limit);
+}
+
+// Detractorii la care nu s-a revenit inca: lista de lucru a echipei.
+export function openDetractors(db, { campaignId = null, limit = 50 } = {}) {
+  const params = [];
+  let sql = `SELECT r.*, c.email, c.name AS contact_name, c.company, c.segment,
+                    ca.name AS campaign_name, l.name AS location_name
+             FROM responses r
+             LEFT JOIN contacts c  ON c.id = r.contact_id
+             JOIN campaigns ca     ON ca.id = r.campaign_id
+             LEFT JOIN locations l ON l.id = r.location_id
+             WHERE r.category = 'detractor' AND r.closed_at IS NULL`;
+  if (campaignId) {
+    sql += ' AND r.campaign_id = ?';
+    params.push(campaignId);
+  }
+  sql += ' ORDER BY r.created_at DESC, r.id DESC LIMIT ?';
+  params.push(limit);
+  return db
+    .prepare(sql)
+    .all(...params)
+    .map((row) => ({ ...row, answers: listAnswers(db, row.id) }));
+}
+
+export function countOpenDetractors(db) {
+  return db
+    .prepare("SELECT COUNT(*) AS n FROM responses WHERE category = 'detractor' AND closed_at IS NULL")
+    .get().n;
 }

@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { openDb } from './db.js';
 import { createMailer } from './mailer.js';
 import { startScheduler } from './scheduler.js';
+import { alertConfigFromEnv, alertsDescription } from './alerts.js';
 import { html, send, redirect, json } from './http.js';
 import { noticePage } from './views/survey.js';
 import * as pub from './routes/public.js';
@@ -76,6 +77,8 @@ const ROUTES = [
   ['GET', '/admin/afise', admin.posters, true],
   ['GET', '/admin/qr.svg', admin.qrImage, true],
   ['GET', '/admin/campanii/:id/invitatii.csv', admin.invitesCsv, true],
+  ['GET', '/admin/alerte', admin.alertsList, true],
+  ['POST', '/admin/campanii/:id/alerte', admin.campaignAlerts, true],
   ['GET', '/admin/raspunsuri', admin.responsesList, true],
   ['GET', '/admin/raspunsuri.csv', admin.responsesCsv, true],
   ['POST', '/admin/raspunsuri/:id/inchide', admin.responseClose, true],
@@ -98,7 +101,7 @@ function match(pattern, pathname) {
   return params;
 }
 
-export function createApp({ db, adminToken, publicUrl, mailer = null }) {
+export function createApp({ db, adminToken, publicUrl, mailer = null, alertConfig = alertConfigFromEnv() }) {
   return async function handler(req, res) {
     const url = new URL(req.url, publicUrl);
     const pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, '') : url.pathname;
@@ -113,7 +116,7 @@ export function createApp({ db, adminToken, publicUrl, mailer = null }) {
         return redirect(res, '/admin/login');
       }
       try {
-        return await handlerFn(req, res, { db, params, url, adminToken, publicUrl, mailer });
+        return await handlerFn(req, res, { db, params, url, adminToken, publicUrl, mailer, alertConfig });
       } catch (err) {
         console.error(`[eroare] ${req.method} ${pathname}`, err);
         if (!res.headersSent) {
@@ -134,12 +137,14 @@ export function startServer({
 } = {}) {
   const db = openDb(dbFile);
   const mailer = createMailer();
-  const server = createServer(createApp({ db, adminToken, publicUrl, mailer }));
+  const alertConfig = alertConfigFromEnv();
+  const server = createServer(createApp({ db, adminToken, publicUrl, mailer, alertConfig }));
   let stopScheduler = () => {};
   server.listen(port, () => {
     console.log(`Equil NPS porneste pe ${publicUrl} (port ${port})`);
     console.log(`Administrare: ${publicUrl}/admin`);
     console.log(`Email: ${mailer.description}`);
+    console.log(`Alerte detractori: ${alertsDescription(alertConfig)}`);
     if (adminToken === 'admin' || adminToken === 'schimba-ma') {
       console.warn('ATENȚIE: ADMIN_TOKEN are valoarea implicită. Schimb-o înainte de producție.');
     }

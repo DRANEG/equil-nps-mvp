@@ -36,6 +36,8 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .tag.promoter { background: #e4f5ec; color: var(--ok); }
 .tag.passive { background: #fdf3e0; color: var(--warn); }
 .tag.detractor { background: #fdeae7; color: var(--bad); }
+.badge { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 999px;
+  background: var(--bad); color: #fff; font-size: 12px; font-weight: 700; text-align: center; }
 .bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--line); }
 .bar span { display: block; }
 .bar .p { background: var(--ok); } .bar .n { background: #f0b429; } .bar .d { background: var(--bad); }
@@ -117,9 +119,12 @@ ${scripts.map((src) => `<script src="${src}" defer></script>`).join('')}
 </html>`;
 }
 
-export function adminNav(active = '') {
+export function adminNav(active = '', openAlerts = 0) {
   const link = (href, key, text) =>
     `<a href="${href}"${active === key ? ' class="on"' : ''}>${text}</a>`;
+  const alerte = `<a href="/admin/alerte"${active === 'alerts' ? ' class="on"' : ''}>Alerte${
+    openAlerts ? ` <span class="badge">${openAlerts}</span>` : ''
+  }</a>`;
   return `<header class="top"><div class="inner">
     <span class="brand">Equil NPS</span>
     <nav>
@@ -127,6 +132,7 @@ export function adminNav(active = '') {
       ${link('/admin/campanii', 'campaigns', 'Campanii')}
       ${link('/admin/locatii', 'locations', 'Locații')}
       ${link('/admin/raspunsuri', 'responses', 'Răspunsuri')}
+      ${alerte}
       <a href="/admin/logout">Ieșire</a>
     </nav>
   </div></header>`;
