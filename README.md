@@ -12,6 +12,8 @@ ale unei firme în KPI, semnale de risc și oportunități de creștere prioriti
 | `tools/test_workbook.py` | Test automat: construiește o versiune mică, o populează cu date și verifică valorile calculate |
 | `tools/audit_formulas.py` | Audit static: paranteze, referințe, funcții incompatibile cu Excel 2016 |
 | `tools/glosar.py` | Cei 66 de termeni din foaia `04_DICTIONAR` |
+| `tools/build_ghid_html.py` | Generează ghidul HTML (glosar căutabil + proces + timpi) din aceleași date |
+| `dist/ghid_equil.html` | Ghidul de teren, publicat ca pagină |
 
 Fișierul nu se editează structural direct în Excel — se modifică generatorul și se
 regenerează, ca să nu se piardă modificările:
