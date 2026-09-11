@@ -1,5 +1,7 @@
 import { createServer } from 'node:http';
 import { openDb } from './db.js';
+import { createMailer } from './mailer.js';
+import { startScheduler } from './scheduler.js';
 import { html, send, redirect, json } from './http.js';
 import { noticePage } from './views/survey.js';
 import * as pub from './routes/public.js';
@@ -14,6 +16,8 @@ const ROUTES = [
   ['POST', '/raspunde', pub.submitResponse],
   ['POST', '/api/raspunsuri', pub.submitResponseApi],
   ['GET', '/multumim', pub.thanks],
+  ['GET', '/dezabonare/:token', pub.unsubscribeForm],
+  ['POST', '/dezabonare/:token', pub.unsubscribe],
 
   ['GET', '/admin/login', admin.loginForm],
   ['POST', '/admin/login', admin.login],
@@ -25,6 +29,8 @@ const ROUTES = [
   ['GET', '/admin/campanii/:id', admin.campaignDetail, true],
   ['POST', '/admin/campanii/:id/status', admin.campaignStatus, true],
   ['POST', '/admin/campanii/:id/invitatii', admin.invitesCreate, true],
+  ['POST', '/admin/campanii/:id/trimite', admin.campaignSendNow, true],
+  ['POST', '/admin/campanii/:id/auto', admin.campaignAutoSend, true],
   ['GET', '/admin/campanii/:id/invitatii.csv', admin.invitesCsv, true],
   ['GET', '/admin/raspunsuri', admin.responsesList, true],
   ['GET', '/admin/raspunsuri.csv', admin.responsesCsv, true],
@@ -48,7 +54,7 @@ function match(pattern, pathname) {
   return params;
 }
 
-export function createApp({ db, adminToken, publicUrl }) {
+export function createApp({ db, adminToken, publicUrl, mailer = null }) {
   return async function handler(req, res) {
     const url = new URL(req.url, publicUrl);
     const pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, '') : url.pathname;
@@ -61,7 +67,7 @@ export function createApp({ db, adminToken, publicUrl }) {
         return redirect(res, '/admin/login');
       }
       try {
-        return await handlerFn(req, res, { db, params, url, adminToken, publicUrl });
+        return await handlerFn(req, res, { db, params, url, adminToken, publicUrl, mailer });
       } catch (err) {
         console.error(`[eroare] ${req.method} ${pathname}`, err);
         if (!res.headersSent) {
@@ -81,15 +87,23 @@ export function startServer({
   publicUrl = process.env.PUBLIC_URL || `http://localhost:${Number(process.env.PORT) || 3000}`,
 } = {}) {
   const db = openDb(dbFile);
-  const server = createServer(createApp({ db, adminToken, publicUrl }));
+  const mailer = createMailer();
+  const server = createServer(createApp({ db, adminToken, publicUrl, mailer }));
+  let stopScheduler = () => {};
   server.listen(port, () => {
     console.log(`Equil NPS porneste pe ${publicUrl} (port ${port})`);
     console.log(`Administrare: ${publicUrl}/admin`);
+    console.log(`Email: ${mailer.description}`);
     if (adminToken === 'admin' || adminToken === 'schimba-ma') {
       console.warn('ATENȚIE: ADMIN_TOKEN are valoarea implicită. Schimb-o înainte de producție.');
     }
+    if (process.env.SEND_ENABLED === '0') {
+      console.log('Robotul de trimitere este oprit (SEND_ENABLED=0).');
+    } else {
+      stopScheduler = startScheduler(db, { mailer, publicUrl });
+    }
   });
-  return { server, db };
+  return { server, db, mailer, stopScheduler };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

@@ -13,12 +13,23 @@ let db;
 let campaign;
 let invite;
 
+// Mailer de test: retine mesajele in loc sa le trimita.
+const mailer = {
+  mode: 'test',
+  description: 'colector de test',
+  sent: [],
+  async send(message) {
+    mailer.sent.push(message);
+    return { id: String(mailer.sent.length), transport: 'test' };
+  },
+};
+
 before(async () => {
   db = openDb(':memory:');
   campaign = createCampaign(db, { name: 'Test NPS', slug: 'test-nps' });
   const contact = upsertContact(db, { email: 'ana@client.ro', name: 'Ana', segment: 'Enterprise' });
   invite = createInvite(db, campaign.id, contact.id);
-  server = createServer(createApp({ db, adminToken: ADMIN_TOKEN, publicUrl: 'http://localhost' }));
+  server = createServer(createApp({ db, adminToken: ADMIN_TOKEN, publicUrl: 'http://localhost', mailer }));
   await new Promise((resolve) => server.listen(0, resolve));
   base = `http://localhost:${server.address().port}`;
 });
@@ -182,4 +193,61 @@ test('escapeHtml previne injectarea din comentarii', async () => {
   const body = await (await fetch(`${base}/admin/raspunsuri`, { headers: authHeaders() })).text();
   assert.ok(!body.includes('<script>alert(1)</script>'));
   assert.match(body, /&lt;script&gt;/);
+});
+
+test('butonul "Trimite acum" expediaza invitatiile campaniei', async () => {
+  const c = createCampaign(db, { name: 'Campanie de trimis', slug: 'de-trimis' });
+  const contact = upsertContact(db, { email: 'destinatar@client.ro', name: 'Destinatar' });
+  createInvite(db, c.id, contact.id);
+  mailer.sent.length = 0;
+
+  const res = await fetch(`${base}/admin/campanii/${c.id}/trimite`, {
+    method: 'POST',
+    headers: authHeaders(),
+    redirect: 'manual',
+  });
+  assert.equal(res.status, 302);
+  assert.match(decodeURIComponent(res.headers.get('location')), /Invitații: 1/);
+  assert.equal(mailer.sent.length, 1);
+  assert.equal(mailer.sent[0].to, 'destinatar@client.ro');
+  assert.match(mailer.sent[0].html, /\/r\/[A-Za-z0-9_-]+\?scor=9/);
+  assert.ok(mailer.sent[0].listUnsubscribe, 'emailul are link de dezabonare');
+
+  const row = db.prepare('SELECT sent_at FROM invites i JOIN contacts ct ON ct.id = i.contact_id WHERE ct.email = ?').get('destinatar@client.ro');
+  assert.ok(row.sent_at);
+});
+
+test('comutatorul de trimitere automata se poate opri din interfata', async () => {
+  const c = createCampaign(db, { name: 'Cu robot', slug: 'cu-robot' });
+  assert.equal(db.prepare('SELECT auto_send FROM campaigns WHERE id = ?').get(c.id).auto_send, 1);
+
+  await fetch(`${base}/admin/campanii/${c.id}/auto`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ auto: '0' }),
+    redirect: 'manual',
+  });
+  assert.equal(db.prepare('SELECT auto_send FROM campaigns WHERE id = ?').get(c.id).auto_send, 0);
+});
+
+test('dezabonarea cere confirmare la GET si se aplica la POST', async () => {
+  const contact = upsertContact(db, { email: 'plecat@client.ro', name: 'Plecat' });
+  const inv = createInvite(db, campaign.id, contact.id);
+
+  const form = await fetch(`${base}/dezabonare/${inv.token}`);
+  const formBody = await form.text();
+  assert.equal(form.status, 200);
+  assert.match(formBody, /plecat@client\.ro/);
+  assert.equal(
+    db.prepare('SELECT unsubscribed_at FROM contacts WHERE id = ?').get(contact.id).unsubscribed_at,
+    null,
+    'un GET (scaner de linkuri) nu dezaboneaza',
+  );
+
+  const done = await fetch(`${base}/dezabonare/${inv.token}`, { method: 'POST' });
+  assert.equal(done.status, 200);
+  assert.match(await done.text(), /Nu vom mai trimite/);
+  assert.ok(db.prepare('SELECT unsubscribed_at FROM contacts WHERE id = ?').get(contact.id).unsubscribed_at);
+
+  assert.equal((await fetch(`${base}/dezabonare/token-inexistent`)).status, 404);
 });

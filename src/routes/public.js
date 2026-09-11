@@ -1,7 +1,8 @@
 import { html, json, redirect, readForm, escapeHtml } from '../http.js';
 import { surveyPage, thanksPage, noticePage } from '../views/survey.js';
 import { categorize, isValidScore } from '../nps.js';
-import { getCampaignBySlug, getInviteByToken, saveResponse } from '../db.js';
+import { getCampaignBySlug, getInviteByToken, saveResponse, unsubscribeByToken } from '../db.js';
+import { page as pageShell } from '../views/layout.js';
 
 // GET /s/:slug — sondaj public, anonim.
 export function surveyBySlug(req, res, { db, params, url }) {
@@ -123,5 +124,37 @@ export function home(req, res, { db, publicUrl }) {
      </head><body><h1>Equil NPS</h1><p>Sondaje active:</p>${links}
      <p><a href="/admin">Administrare</a></p>
      <p style="color:#666;font-size:13px">${escapeHtml(publicUrl)}</p></body></html>`,
+  );
+}
+
+// GET /dezabonare/:token — confirmarea dezabonarii (nu o executam la GET, ca sa nu
+// dezaboneze scanerele de linkuri din clientii de email).
+export function unsubscribeForm(req, res, { db, params }) {
+  const invite = getInviteByToken(db, params.token);
+  if (!invite) {
+    return html(res, 404, noticePage('Link invalid', 'Linkul de dezabonare nu mai este valabil.'));
+  }
+  const body = `<div class="card">
+    <h1>Dezabonare</h1>
+    <p class="sub">Adresa <strong>${escapeHtml(invite.email)}</strong> nu va mai primi invitații
+    sau reamintiri legate de sondajele noastre.</p>
+    <form method="POST" action="/dezabonare/${escapeHtml(invite.token)}">
+      <button class="btn" type="submit">Confirmă dezabonarea</button>
+    </form>
+  </div>`;
+  return html(res, 200, pageShell({ title: 'Dezabonare', body, narrow: true }));
+}
+
+// POST /dezabonare/:token — executa dezabonarea. Acelasi endpoint serveste si
+// butonul "Unsubscribe" al Gmail/Outlook (List-Unsubscribe-Post: One-Click).
+export function unsubscribe(req, res, { db, params }) {
+  const invite = unsubscribeByToken(db, params.token);
+  if (!invite) {
+    return html(res, 404, noticePage('Link invalid', 'Linkul de dezabonare nu mai este valabil.'));
+  }
+  return html(
+    res,
+    200,
+    noticePage('Te-am scos de pe listă', `Nu vom mai trimite emailuri către ${invite.email}.`),
   );
 }

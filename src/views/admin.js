@@ -111,7 +111,7 @@ ${flash ? `<div class="flash">${escapeHtml(flash)}</div>` : ''}
   return page({ title: 'Campanii', body, nav: adminNav('campaigns') });
 }
 
-export function campaignDetailPage({ campaign, summary, invites, publicUrl, flash }) {
+export function campaignDetailPage({ campaign, summary, invites, publicUrl, email, flash }) {
   const pending = invites.filter((i) => !i.responded_at).length;
   const rows = invites.length
     ? invites
@@ -121,11 +121,12 @@ export function campaignDetailPage({ campaign, summary, invites, publicUrl, flas
             <td class="small">${escapeHtml(i.segment || '')}</td>
             <td class="num">${i.score === null || i.score === undefined ? '<span class="muted">&mdash;</span>' : i.score}</td>
             <td class="small">${i.responded_at ? escapeHtml(i.responded_at) : '<span class="muted">în așteptare</span>'}</td>
+            <td class="small">${inviteEmailState(i)}</td>
             <td class="small"><code>${escapeHtml(publicUrl)}/r/${escapeHtml(i.token)}</code></td>
           </tr>`,
         )
         .join('')
-    : '<tr><td colspan="5" class="muted">Nicio invitație generată.</td></tr>';
+    : '<tr><td colspan="6" class="muted">Nicio invitație generată.</td></tr>';
 
   const body = `
 <h1>${escapeHtml(campaign.name)}</h1>
@@ -148,6 +149,8 @@ ${flash ? `<div class="flash">${escapeHtml(flash)}</div>` : ''}
   </form>
 </div>
 
+${emailCard(campaign, email)}
+
 <div class="card">
   <h2 style="margin-top:0">Adaugă contacte</h2>
   <p class="small muted">Câte un contact pe linie, format: <code>email, nume, companie, segment</code>
@@ -165,7 +168,7 @@ mihai@client.ro, Mihai Ionescu, Alt Client SRL, IMM"></textarea>
     <a class="btn ghost" href="/admin/campanii/${campaign.id}/invitatii.csv">Export CSV pentru mail-merge</a>
   </div>
   <table style="margin-top:12px">
-    <thead><tr><th>Contact</th><th>Segment</th><th class="num">Scor</th><th>Răspuns la</th><th>Link personal</th></tr></thead>
+    <thead><tr><th>Contact</th><th>Segment</th><th class="num">Scor</th><th>Răspuns la</th><th>Email</th><th>Link personal</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
 </div>
@@ -221,6 +224,76 @@ export function responsesPage({ responses, campaigns, campaignId, category }) {
 }
 
 /* --------------------------------- fragmente --------------------------------- */
+
+function inviteEmailState(invite) {
+  if (invite.unsubscribed_at) return '<span class="tag detractor">dezabonat</span>';
+  if (invite.send_error) {
+    return `<span class="tag detractor" title="${escapeHtml(invite.send_error)}">eroare</span>`;
+  }
+  if (invite.reminder_sent_at) {
+    return `<span class="tag promoter">reminder</span><div class="small muted">${escapeHtml(invite.reminder_sent_at)}</div>`;
+  }
+  if (invite.sent_at) {
+    return `<span class="tag passive">trimis</span><div class="small muted">${escapeHtml(invite.sent_at)}</div>`;
+  }
+  return '<span class="muted">netrimis</span>';
+}
+
+function emailCard(campaign, email) {
+  if (!email) return '';
+  const { stats, log, transport, mode, reminderDays, delayMinutes } = email;
+  const modeNote =
+    mode === 'smtp'
+      ? `Trimitere reală prin ${escapeHtml(transport)}.`
+      : `Nu e configurat SMTP: emailurile se salvează ca fișiere .eml (${escapeHtml(transport)}), nu pleacă nicăieri.`;
+
+  const logRows = log.length
+    ? log
+        .map(
+          (e) => `<tr>
+            <td class="small">${escapeHtml(e.created_at)}</td>
+            <td class="small">${escapeHtml(e.kind)}</td>
+            <td class="small">${escapeHtml(e.recipient)}</td>
+            <td class="small">${e.status === 'trimis' ? '<span class="tag promoter">trimis</span>' : `<span class="tag detractor" title="${escapeHtml(e.detail || '')}">eroare</span>`}</td>
+          </tr>`,
+        )
+        .join('')
+    : '<tr><td colspan="4" class="muted">Nimic trimis încă.</td></tr>';
+
+  return `<div class="card">
+  <h2 style="margin-top:0">Trimitere pe email</h2>
+  <p class="small muted">${modeNote}</p>
+  <div class="row" style="gap:24px;margin:12px 0">
+    <div><div class="name small muted">DE TRIMIS</div><strong>${stats.de_trimis}</strong></div>
+    <div><div class="name small muted">TRIMISE</div><strong>${stats.trimise}</strong></div>
+    <div><div class="name small muted">REMINDERE</div><strong>${stats.remindere}</strong></div>
+    <div><div class="name small muted">ERORI</div><strong>${stats.erori}</strong></div>
+    <div><div class="name small muted">DEZABONAȚI</div><strong>${stats.dezabonati}</strong></div>
+  </div>
+  <p class="small muted">
+    Robotul trimite invitațiile la ${delayMinutes} minute după import (ca să ai timp să corectezi lista)
+    și o singură reamintire după ${reminderDays} zile, doar celor care nu au răspuns.
+  </p>
+  <div class="row">
+    <form method="POST" action="/admin/campanii/${campaign.id}/trimite">
+      <button class="btn" type="submit">Trimite acum ce e în așteptare</button>
+    </form>
+    <form method="POST" action="/admin/campanii/${campaign.id}/auto">
+      <input type="hidden" name="auto" value="${campaign.auto_send ? 0 : 1}">
+      <button class="btn ghost" type="submit">
+        ${campaign.auto_send ? 'Oprește trimiterea automată' : 'Pornește trimiterea automată'}
+      </button>
+    </form>
+    <span class="small ${campaign.auto_send ? '' : 'muted'}">
+      Trimitere automată: <strong>${campaign.auto_send ? 'pornită' : 'oprită'}</strong>
+    </span>
+  </div>
+  <table style="margin-top:16px">
+    <thead><tr><th>Data</th><th>Tip</th><th>Destinatar</th><th>Stare</th></tr></thead>
+    <tbody>${logRows}</tbody>
+  </table>
+</div>`;
+}
 
 function closeButton(r) {
   if (r.closed_at) {

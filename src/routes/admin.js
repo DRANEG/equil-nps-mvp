@@ -3,10 +3,12 @@ import { loginPage, dashboardPage, campaignsPage, campaignDetailPage, responsesP
 import { noticePage } from '../views/survey.js';
 import { summarize, marginOfError } from '../nps.js';
 import {
-  listCampaigns, getCampaign, createCampaign, setCampaignActive,
+  listCampaigns, getCampaign, createCampaign, setCampaignActive, setCampaignAutoSend,
   upsertContact, createInvite, listInvites, markInvitesSent,
   listResponses, markResponseClosed, monthlyTrend, breakdownBy,
+  emailStats, listEmailLog,
 } from '../db.js';
+import { runSendPass } from '../scheduler.js';
 
 const COOKIE = 'equil_nps_admin';
 
@@ -84,12 +86,13 @@ export async function campaignCreate(req, res, { db }) {
   return redirect(res, `/admin/campanii/${campaign.id}`);
 }
 
-export function campaignDetail(req, res, { db, params, url, publicUrl }) {
+export function campaignDetail(req, res, { db, params, url, publicUrl, mailer }) {
   const campaign = getCampaign(db, Number(params.id));
   if (!campaign) return html(res, 404, noticePage('Inexistent', 'Campania nu există.'));
   const invites = listInvites(db, campaign.id);
   const summary = summarize(listResponses(db, { campaignId: campaign.id }));
   const added = url.searchParams.get('adaugate');
+  const sentInfo = url.searchParams.get('trimis');
   return html(
     res,
     200,
@@ -98,7 +101,15 @@ export function campaignDetail(req, res, { db, params, url, publicUrl }) {
       summary,
       invites,
       publicUrl,
-      flash: added ? `${added} contacte procesate.` : null,
+      email: {
+        stats: emailStats(db, campaign.id),
+        log: listEmailLog(db, { campaignId: campaign.id, limit: 8 }),
+        transport: mailer ? mailer.description : 'necunoscut',
+        mode: mailer ? mailer.mode : 'dry',
+        reminderDays: Number(process.env.REMINDER_DAYS) || 5,
+        delayMinutes: process.env.SEND_DELAY_MINUTES === undefined ? 10 : Number(process.env.SEND_DELAY_MINUTES),
+      },
+      flash: sentInfo || (added ? `${added} contacte procesate.` : null),
     }),
   );
 }
@@ -201,4 +212,28 @@ export function parseContacts(text) {
 function intOrNull(value) {
   const n = Number(value);
   return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+// POST /admin/campanii/:id/trimite — trimitere manuala, acum, pentru campania curenta.
+// Ignora atat intarzierea de siguranta, cat si comutatorul de trimitere automata:
+// daca apesi butonul, ai decis deja.
+export async function campaignSendNow(req, res, { db, params, mailer, publicUrl }) {
+  const campaign = getCampaign(db, Number(params.id));
+  if (!campaign) return html(res, 404, noticePage('Inexistent', 'Campania nu există.'));
+  const result = await runSendPass(db, {
+    mailer,
+    publicUrl,
+    campaignId: campaign.id,
+    onlyAutoSend: false,
+    delayMinutes: 0,
+  });
+  const summary = `Invitații: ${result.invitatii}, remindere: ${result.remindere}, erori: ${result.erori}`;
+  return redirect(res, `/admin/campanii/${campaign.id}?trimis=${encodeURIComponent(summary)}`);
+}
+
+// POST /admin/campanii/:id/auto — porneste/opreste robotul pentru campania asta.
+export async function campaignAutoSend(req, res, { db, params }) {
+  const form = await readForm(req);
+  setCampaignAutoSend(db, Number(params.id), form.auto === '1');
+  return redirect(res, `/admin/campanii/${params.id}`);
 }

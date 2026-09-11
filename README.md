@@ -21,7 +21,8 @@ npm start                 # pornește pe http://localhost:3000
 - Sondaj public demo: <http://localhost:3000/s/demo-nps>
 - Administrare: <http://localhost:3000/admin> (parola = `ADMIN_TOKEN` din `.env`)
 
-Teste: `npm test` (19 teste — calculul NPS, fluxul de răspuns, autentificare, export).
+Teste: `npm test` (40 de teste — calculul NPS, fluxul de răspuns, autentificare, export,
+protocolul SMTP, robotul de trimitere și dezabonarea).
 
 ## 2. Ce face
 
@@ -30,7 +31,8 @@ Teste: `npm test` (19 teste — calculul NPS, fluxul de răspuns, autentificare,
 | Sondaj | Pagină mobil-first, scala 0–10 + motivul scorului. Funcționează fără JavaScript. |
 | Campanii | Fiecare val de măsurare e o campanie (ex. „NPS trimestrial Q1”), cu întrebări proprii și link public `/s/<slug>`. |
 | Contacte | Le lipești ca text (`email, nume, companie, segment`); fiecare primește un link unic `/r/<token>`, deci știi cine a răspuns. |
-| Trimitere | Export CSV cu linkuri, gata de mail-merge în Gmail/Outlook/Mailchimp. Aplicația nu trimite emailuri — vezi secțiunea 5. |
+| Trimitere | Automată pe email (SMTP), cu o singură reamintire după 5 zile. Alternativ, export CSV cu linkuri pentru mail-merge. |
+| Dezabonare | Link în fiecare email + buton „Unsubscribe” al Gmail/Outlook; dezabonații nu mai primesc nimic. |
 | Dashboard | Scor NPS, marjă de eroare, rată de răspuns, distribuție 0–10, evoluție lunară, defalcare pe segment, ultimele comentarii. |
 | Răspunsuri | Listă filtrabilă, export CSV și buton „Închide bucla” pentru cazurile în care ai revenit către client. |
 | API | `POST /api/raspunsuri` cu JSON, pentru widget în aplicație sau integrare cu alt sistem. |
@@ -66,23 +68,63 @@ Programul e partea ușoară. Ca măsurătoarea să fie utilă, ai nevoie de:
    și păstrezi datele doar cât ai nevoie. Aplicația salvează email, nume, companie,
    segment, scor și comentariu — nimic altceva, local, în fișierul tău SQLite.
 
-## 5. Trimiterea invitațiilor
+## 5. Trimiterea automată pe email
 
-MVP-ul nu trimite emailuri intenționat (ca să nu depinzi de un cont SMTP/API din prima zi).
-Fluxul recomandat:
+### Cum funcționează
 
-1. Admin → Campanii → deschizi campania → lipești contactele → **Generează linkuri**.
-2. **Export CSV pentru mail-merge** → obții coloanele `email, nume, companie, segment, link`.
-3. Trimiți din Gmail (Mail Merge), Outlook, Mailchimp sau Brevo, cu textul:
+1. Adaugi contactele în campanie → fiecare primește un link unic.
+2. După `SEND_DELAY_MINUTES` (implicit 10), robotul trimite **invitația**. Pauza aceea
+   e intenționată: ai timp să corectezi lista dacă ai lipit greșit ceva. Butonul
+   **„Trimite acum ce e în așteptare”** o sare.
+3. După `REMINDER_DAYS` (implicit 5) trimite **o singură reamintire**, doar celor care
+   nu au răspuns. Cine a răspuns sau s-a dezabonat nu mai primește nimic.
+4. Fiecare trimitere apare în jurnalul din pagina campaniei (trimis / eroare, cu motivul).
 
-   > Bună, {{nume}}. Ne-ar ajuta un minut din timpul tău: {{link}}
+Emailul conține butoanele 0–10: un click din inbox duce direct în sondaj cu nota bifată,
+unde omul poate scrie motivul. Rata de răspuns crește sensibil față de un simplu link.
 
-4. Opțional, pui butoanele de scor direct în email — linkul acceptă scorul preselectat:
-   `{{link}}?scor=9`. Omul dă un click în email și ajunge pe pagină cu 9 deja bifat,
-   unde poate adăuga motivul.
+### Configurare SMTP
 
-Când vrei trimitere automată, adaugi un pas de SMTP peste aceeași listă de invitații —
-structura de date e deja pregătită (`invites.sent_at`).
+Pui datele în `.env` și repornești:
+
+```bash
+SMTP_HOST=smtp.brevo.com      # sau smtp.gmail.com, smtp-relay.sendinblue.com, smtp.office365.com...
+SMTP_PORT=587
+SMTP_SECURE=starttls          # starttls (587) sau tls (465)
+SMTP_USER=...
+SMTP_PASS=...
+MAIL_FROM=Equil <nps@firma-ta.ro>
+```
+
+**Fără `SMTP_HOST` nu pleacă niciun email**: mesajele se scriu ca fișiere `.eml` în
+`data/outbox/`, ca să le deschizi și să verifici textul înainte de a-l trimite clienților.
+Pagina campaniei spune clar în ce mod ești.
+
+Ca să ajungi în inbox, nu în spam: folosește un domeniu al tău cu **SPF** și **DKIM**
+configurate (orice furnizor de email tranzacțional — Brevo, Mailgun, SendGrid, Amazon SES —
+îți dă cele două înregistrări DNS de adăugat). Gmail personal merge pentru teste, nu pentru
+trimiteri către sute de clienți.
+
+### Dezabonare
+
+Fiecare email are link de dezabonare și antetele `List-Unsubscribe`, deci funcționează și
+butonul „Unsubscribe” din Gmail/Outlook. Un simplu GET nu dezabonează pe nimeni (scanerele
+de linkuri din firewall-urile de email ar face-o din greșeală) — se cere confirmare.
+
+### Cron, în loc de robotul din server
+
+```bash
+SEND_ENABLED=0        # oprește robotul intern
+0 * * * * cd /opt/equil-nps && npm run trimite    # și îl rulezi din cron, la fiecare oră
+```
+
+Ambele variante sunt sigure dacă rulează simultan: invitația se rezervă în baza de date
+înainte de trimitere, deci același om nu primește de două ori același email.
+
+### Varianta fără SMTP (mail-merge)
+
+Rămâne disponibilă: **Export CSV pentru mail-merge** îți dă `email, nume, companie, segment, link`
+și trimiți din Gmail Mail Merge, Outlook sau Mailchimp cu textul tău.
 
 ## 6. Structura codului
 
@@ -95,6 +137,10 @@ src/
   routes/public.js   sondaj, trimitere răspuns, API JSON
   routes/admin.js    dashboard, campanii, invitații, exporturi
   views/             HTML-ul (layout + CSS, sondaj, admin)
+  mailer.js          client SMTP propriu (fara dependente) + modul .eml pentru probe
+  emails.js          șabloanele de invitație și de reamintire
+  scheduler.js       robotul: ce se trimite, când și cu ce protecții
+  send.js            o singură trecere de trimitere, pentru cron
   seed.js            date demo
 test/                teste pentru calcul și pentru fluxul complet
 data/nps.db          baza de date (nu se urcă în git)
@@ -110,6 +156,8 @@ Rute principale:
 | POST | `/api/raspunsuri` | același lucru, JSON: `{ "slug": "...", "score": 9, "comment": "..." }` |
 | GET | `/admin` | dashboard (necesită autentificare) |
 | GET | `/admin/raspunsuri.csv` | export răspunsuri |
+| GET | `/dezabonare/:token` | pagina de dezabonare (confirmare) |
+| POST | `/dezabonare/:token` | dezabonarea propriu-zisă (și butonul din Gmail) |
 | GET | `/healthz` | verificare de sănătate pentru hosting |
 
 ## 7. Punere în producție
@@ -124,7 +172,9 @@ Rute principale:
 ## 8. Limite cunoscute (conștiente, pentru un MVP)
 
 - O singură parolă de admin, fără conturi per utilizator.
-- Fără trimitere de email și fără remindere automate.
+- Fără aplicație nativă de mobil: sondajul e o pagină web responsive, deschisă din
+  linkul primit pe email (pentru NPS asta e și varianta cu rata cea mai bună de răspuns).
+- O singură reamintire per invitație; nu există secvențe de mai multe mesaje.
 - Fără grafic interactiv (dashboardul desenează bare simple în HTML/CSS).
 - Fără multi-tenant: o instalare = o organizație.
 
