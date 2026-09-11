@@ -15,12 +15,25 @@ Fata de v0.1:
   - fara UNIQUE/FILTER (compatibil Excel 2016+, LibreOffice, Google Sheets)
 """
 
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side, NamedStyle
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.formatting.rule import CellIsRule, FormulaRule
+from openpyxl.chart import BarChart, LineChart, Reference
+from openpyxl.chart.label import DataLabelList
+from openpyxl.chart.series import DataPoint
+from openpyxl.chart.data_source import StrRef
+from openpyxl.chart.shapes import GraphicalProperties
+from openpyxl.drawing.line import LineProperties
 from openpyxl.comments import Comment
+
+from glosar import DICTIONAR
 
 # ---------------------------------------------------------------- constante
 
@@ -59,6 +72,8 @@ BORDER = Border(left=thin, right=thin, top=thin, bottom=thin)
 
 wb = Workbook()
 wb.remove(wb.active)
+# Fara asta, Excel afiseaza celulele calculate (si graficele) goale la prima deschidere.
+wb.calculation.fullCalcOnLoad = True
 
 
 # ---------------------------------------------------------------- helpers
@@ -218,6 +233,27 @@ SCHEMA[SH_NPS] = dict(
     ])
 
 
+def ym(d):
+    """AAAA-LL fara TEXT(): codurile de format din TEXT() depind de limba
+    interfetei Excel ("yyyy-mm" nu merge intr-un Excel romanesc)."""
+    return f'YEAR({d})&"-"&RIGHT("0"&MONTH({d}),2)'
+
+
+def ymd(d):
+    """AAAA-LL-ZZ, din acelasi motiv."""
+    return f'{ym(d)}&"-"&RIGHT("0"&DAY({d}),2)'
+
+
+def mon(v, dec=0):
+    """Numar cu separator de mii, conform setarilor locale (FIXED, nu TEXT)."""
+    return f'FIXED({v},{dec})'
+
+
+def pct(v, dec=1):
+    """Procent scris ca text, independent de limba."""
+    return f'FIXED(({v})*100,{dec})&"%"'
+
+
 def cl(sheet, tech):
     """Litera coloanei pentru un camp tehnic dintr-o foaie de date."""
     cols = SCHEMA[sheet]["cols"]
@@ -338,7 +374,26 @@ ghid = [
     ("Fără celule „mixte”", "Nu combina text și cifre în aceeași celulă (ex. „12.000 lei” → 12000)."),
     ("Date personale", "Pentru NPS și oameni, folosește inițiale sau ID-uri dacă firma nu a agreat nominalizarea. Semnează NDA înainte de a primi datele."),
     ("", ""),
-    ("COMPATIBILITATE", "Fără funcții dinamice (UNIQUE/FILTER/LET). Funcționează în Excel 2016+, Microsoft 365, LibreOffice Calc și Google Sheets."),
+    ("UN FIȘIER PENTRU FIECARE FIRMĂ", ""),
+    ("Regula", "Nu amesteca două firme în același fișier. Păstrezi acest fișier ca șablon nemodificat și faci o copie pentru fiecare client."),
+    ("Cod de firmă", "Fiecare firmă primește un cod în 01_FIRMA (EQ-0001, EQ-0002…). Codul rămâne același pentru totdeauna, chiar dacă firma își schimbă numele."),
+    ("Nume fișier", "EQUIL_<cod>_<NumeFirma>_<AAAA-LL>.xlsx — ex. EQUIL_EQ-0001_AlfaSRL_2026-06.xlsx. Perioada din nume îți spune din ce rulaj e fișierul."),
+    ("Refolosire lunară", "Pentru luna următoare la aceeași firmă: copiază fișierul, schimbă perioada în 09_PARAMETRI și adaugă noile linii de vânzări. Nu ștergi istoricul."),
+    ("Șablonul", "Ține o copie curată, fără date, într-un folder separat („_SABLON”). Din ea pleacă fiecare firmă nouă."),
+    ("", ""),
+    ("CÂT DUREAZĂ (estimat, prima rulare)", ""),
+    ("01_FIRMA", "20-30 min, în discuția de kickoff, împreună cu clientul."),
+    ("02_CONTACTE", "10-15 min, tot la kickoff. Cea mai bună investiție de timp din tot procesul."),
+    ("03_CHECKLIST_DATE", "15 min să-l trimiți și să-l explici. Apoi 3-10 zile lucrătoare de așteptare, cu 2-3 follow-up-uri scurte."),
+    ("Import date", "30-60 min dacă exporturile sunt curate. 2-4 ore dacă trebuie curățate manual (denumiri inconsecvente, valori cu text, ID-uri lipsă)."),
+    ("09_PARAMETRI", "5 min. Pragurile se ajustează pe industrie."),
+    ("Citit 20-23", "30-45 min de citit semnalele și de verificat dacă au sens."),
+    ("30_OPORTUNITATI", "45-60 min: transformi semnalele în oportunități, estimezi impactul, pui responsabili."),
+    ("40_RAPORT + grafice", "30-45 min: concluziile automate îți dau schița, tu scrii varianta pentru client."),
+    ("TOTAL munca ta", "aprox. 4-6 ore de lucru efectiv, întinse pe 1-2 săptămâni calendaristice (așteptarea datelor domină)."),
+    ("Rulările următoare", "1-1,5 ore pe lună la aceeași firmă: adaugi datele noi, schimbi perioada, reciteşti semnalele."),
+    ("", ""),
+    ("COMPATIBILITATE", "Fără funcții dinamice (UNIQUE/FILTER/LET/IFS). Funcționează în Excel 2016+, Microsoft 365, LibreOffice Calc și Google Sheets. Nu ai nevoie de o versiune mai nouă de Office pentru acest fișier."),
     ("LIMITE ACTUALE", "Pre-formatat pentru 1000 de linii de vânzări, 200 de clienți, 100 de produse, 60 de persoane, 500 de răspunsuri NPS. Pentru volume mai mari, trage formulele în jos."),
     ("URMĂTOAREA VERSIUNE", "Benchmark-uri de industrie, previziune de venit, scor de risc de churn, generare automată a naraţiunii din raport."),
 ]
@@ -378,6 +433,7 @@ ws.column_dimensions["C"].width = 58
 
 firma = [
     ("IDENTIFICARE", None, None),
+    ("Cod client EQUIL", "", "ID-ul intern al firmei în portofoliul tău. Format recomandat: EQ-0001, EQ-0002…"),
     ("Denumire legală", "", "Exact ca la Registrul Comerțului."),
     ("CUI / Cod fiscal", "", ""),
     ("Nr. Registrul Comerțului", "", ""),
@@ -413,7 +469,8 @@ firma = [
     ("Consultant EQUIL responsabil", "", ""),
     ("Data kickoff", "", ""),
     ("Data livrării raportului", "", ""),
-    ("NDA semnat", "", "Da / Nu / Data."),
+    ("NDA semnat", "", "Da / Nu / Data. NDA = acord de confidențialitate; vezi 04_DICTIONAR."),
+    ("Nume fișier", "", "Convenție: EQUIL_<cod>_<NumeFirma>_<AAAA-LL>.xlsx — ex. EQUIL_EQ-0001_AlfaSRL_2026-06.xlsx"),
 ]
 r = 4
 for label, val, note in firma:
@@ -655,6 +712,44 @@ for k, (lab, f, fmt) in enumerate(prog, start=1):
     c.font = Font(size=10, color=GREY_TXT)
 
 
+
+# ---------------------------------------------------------------- 04_DICTIONAR
+
+DICT_COLS = [("Termen", 30), ("Categorie", 13), ("Ce înseamnă", 62),
+             ("De ce contează pentru analiză", 56), ("Cum îl ceri / unde îl găsești", 56)]
+
+ws = wb.create_sheet("04_DICTIONAR")
+title_block(ws, "04 — DICȚIONAR DE TERMENI",
+            "Fiecare termen din fișier, explicat pe scurt, cu formularea pe care o poți folosi direct în discuția cu clientul. "
+            "Filtrează pe „Categorie” ca să vezi doar ce te interesează.")
+hr = 4
+for j, (h, w) in enumerate(DICT_COLS, start=1):
+    ws.cell(row=hr, column=j, value=h)
+    ws.column_dimensions[get_column_letter(j)].width = w
+style_header(ws, hr, len(DICT_COLS))
+ws.freeze_panes = f"A{hr+1}"
+
+CAT_COLORS = {"Proces": "E4EDF6", "Sisteme": "E8F1EC", "Financiar": "FBF0DC",
+              "Comercial": "F3E9F2", "Oameni": "EDEFF5", "Măsurare": "E9F2F2",
+              "Excel": "EFEFEC"}
+r = hr + 1
+for termen, cat, ce, dece, cum in DICTIONAR:
+    vals = (termen, cat, ce, dece, cum)
+    for j, v in enumerate(vals, start=1):
+        c = ws.cell(row=r, column=j, value=v)
+        c.border = BORDER
+        c.alignment = Alignment(wrap_text=True, vertical="top")
+        c.font = Font(size=10, bold=(j == 1), color=INK if j == 1 else "333333")
+        if j == 2:
+            c.fill = PatternFill("solid", fgColor=CAT_COLORS.get(cat, "EFEFEC"))
+            c.alignment = Alignment(wrap_text=True, vertical="center", horizontal="center")
+            c.font = Font(size=9, color=GREY_TXT)
+    ws.row_dimensions[r].height = 46
+    r += 1
+last_dict = r - 1
+ws.auto_filter.ref = f"A{hr}:{get_column_letter(len(DICT_COLS))}{last_dict}"
+ws.sheet_view.showGridLines = False
+
 # ---------------------------------------------------------------- 09_PARAMETRI
 
 ws = wb.create_sheet(SH_PAR)
@@ -796,7 +891,7 @@ CGS = cl(SH_VANZARI, "COGS")
 GPc = cl(SH_VANZARI, "Gross_Profit")
 
 vanzari_formulas = {
-    "Period": f'=IF(${A}{{r}}="","",TEXT(${A}{{r}},"yyyy-mm"))',
+    "Period": f'=IF(${A}{{r}}="","",{ym(f"${A}{{r}}")})',
     "Gross_Profit": f'=IF(${REV}{{r}}="","",${REV}{{r}}-N(${CGS}{{r}}))',
     "Margin_Pct": f'=IFERROR(${GPc}{{r}}/${REV}{{r}},"")',
     "Customer_Name": f'=IFERROR(INDEX({cust_nm_r},MATCH(${CUS}{{r}},{cust_id_r},0)),"")',
@@ -1087,9 +1182,13 @@ c_cols = [
      f'IF($O{{r}}="Marjă sub referință",MAX(0,$E{{r}}*({P["margin"]}-$I{{r}})),'
      '$E{r}*0.15))),""))'),
 ]
+c_cols.append(("Cheie clasament", 13, F_NUM,
+               '=IF(OR($A{r}="",$E{r}="",N($E{r})<=0),"",$E{r}+ROW()/1000000)'))
 wsA, fA, lA = analysis_sheet("21_ANALIZA_CLIENTI", "21 — ANALIZA CLIENȚILOR",
                              "Se completează singură din 10_CLIENTI + 13_VANZARI. Filtrează coloana „Semnal” ca să vezi unde e treabă de făcut.",
                              CU_ID, c_cols, N_CLIENTI)
+KEY_A = get_column_letter(len(c_cols))
+wsA.column_dimensions[KEY_A].hidden = True
 for sig, color in (("Risc concentrare", "FDE2C8"), ("Client pierdut", "F8D7DA"),
                    ("Client dormant", "FBE3C2"), ("Scădere de venit", "F8D7DA"),
                    ("Detractor activ", "F8D7DA"), ("Marjă sub referință", "FFF3CD"),
@@ -1132,9 +1231,13 @@ p_cols = [
      'IF($M{r}="Creștere + penetrare mică",$D{r}*0.5,'
      'IF($M{r}="Produs în scădere",MAX(0,$E{r}-$D{r}),$D{r}*0.1))),""))'),
 ]
+p_cols.append(("Cheie clasament", 13, F_NUM,
+               '=IF(OR($A{r}="",$D{r}="",N($D{r})<=0),"",$D{r}+ROW()/1000000)'))
 wsP, fP, lP = analysis_sheet("22_ANALIZA_PRODUSE", "22 — ANALIZA PRODUSELOR",
                              "Arată unde e marjă de recuperat și ce produse merg bine, dar ajung la prea puțini clienți.",
                              PR_ID, p_cols, N_PRODUSE)
+KEY_P = get_column_letter(len(p_cols))
+wsP.column_dimensions[KEY_P].hidden = True
 for sig, color in (("Marjă sub referință", "FFF3CD"), ("Creștere + penetrare mică", "D6F0D6"),
                    ("Produs în scădere", "F8D7DA"), ("Fără vânzări", "EDEDED")):
     wsP.conditional_formatting.add(f"M{fP}:M{lP}",
@@ -1271,6 +1374,7 @@ sc = len(OPP_COLS) + 2
 SL, SL2 = get_column_letter(sc), get_column_letter(sc + 1)
 ws.column_dimensions[SL].width = 30
 ws.column_dimensions[SL2].width = 14
+hr_opp = hr
 ws.cell(row=hr, column=sc, value="SUMAR PORTOFOLIU").font = Font(bold=True, color=WHITE, size=10)
 ws.cell(row=hr, column=sc).fill = PatternFill("solid", fgColor=INK)
 ws.cell(row=hr, column=sc + 1).fill = PatternFill("solid", fgColor=INK)
@@ -1326,11 +1430,84 @@ def rap_row(r, label, formula, fmt=None, note=None, calc=True):
 r = 4
 rap_section(r, "IDENTIFICARE"); r += 1
 rap_row(r, "Client", f"={P['currency'].replace('$B$10','$B$27')}", None, "Se preia din 01_FIRMA."); r += 1
-rap_row(r, "Perioada analizată", f'=TEXT({cf},"yyyy-mm-dd")&" — "&TEXT({ct},"yyyy-mm-dd")'); r += 1
-rap_row(r, "Comparat cu", f'=TEXT({pf},"yyyy-mm-dd")&" — "&TEXT({pt},"yyyy-mm-dd")'); r += 1
+rap_row(r, "Perioada analizată", f'={ymd(cf)}&" — "&{ymd(ct)}'); r += 1
+rap_row(r, "Comparat cu", f'={ymd(pf)}&" — "&{ymd(pt)}'); r += 1
 rap_row(r, "Monedă", f"={P['currency']}"); r += 1
 rap_row(r, "Consultant EQUIL", f"='{SH_PAR}'!$B$28"); r += 1
 r += 1
+
+
+def K(name, col="B"):
+    return f"'20_KPI'!${col}${ROW[name]}"
+
+
+CUR = P["currency"]
+_rev, _revd = K("Venit net"), K("Venit net", "E")
+_mar = K("Marjă brută %")
+_act, _new, _arpu = K("Clienți activi"), K("Clienți noi"), K("Venit mediu / client")
+_conc = K("Concentrare — cel mai mare client")
+_nps, _nresp, _det = K("NPS"), K("Număr răspunsuri NPS"), K("% Detractori")
+_tgt, _ating, _gap = K("Țintă de venit"), K("Atingere țintă %"), K("Gap față de țintă")
+_vfte = K("Venit / FTE")
+_oppn = f"'30_OPORTUNITATI'!${SL2}${hr_opp+1}"
+_oppv = f"'30_OPORTUNITATI'!${SL2}${hr_opp+3}"
+_oppa = f"'30_OPORTUNITATI'!${SL2}${hr_opp+7}"
+
+CONCLUZII = [
+    ("Venit",
+     f'=IF({_rev}=0,"Nu există date de vânzări în perioada selectată. Verifică 13_VANZARI și perioada din 09_PARAMETRI.",'
+     f'"Venitul net al perioadei este "&{mon(_rev)}&" "&{CUR}&'
+     f'IF(OR({_revd}="",{_revd}=0),", fără perioadă de comparație completată.",'
+     f'", "&IF({_revd}>=0,"în creștere cu ","în scădere cu ")&{pct(f"ABS({_revd})")}&" față de perioada comparativă."))'),
+    ("Marjă",
+     f'=IF({_rev}=0,"—",'
+     f'"Marja brută este "&{pct(_mar)}&", "&IF({_mar}>={P["margin"]},"peste","sub")&" referința de "&{pct(P["margin"])}&'
+     f'IF({_mar}>={P["margin"]},". Marja se menține.",'
+     f'". Un singur punct procentual de marjă recuperat înseamnă "&{mon(f"{_rev}*0.01")}&" "&{CUR}&"."))'),
+    ("Clienți",
+     f'=IF({_act}=0,"—",'
+     f'"Au cumpărat "&{mon(_act)}&" clienți, din care "&{mon(_new)}&" noi. '
+     f'Venitul mediu pe client este "&{mon(_arpu)}&" "&{CUR}&".")'),
+    ("Concentrare",
+     f'=IF({_rev}=0,"—",'
+     f'"Cel mai mare client aduce "&{pct(_conc)}&" din venit, "&'
+     f'IF({_conc}>{P["conc"]},"peste pragul de risc de "&{pct(P["conc"])}&". Retenția lui este prioritate, nu opțiune.",'
+     f'"sub pragul de risc. Baza de clienți este echilibrată."))'),
+    ("Productivitate",
+     f'=IF({_vfte}=0,"—","Fiecare normă întreagă din echipă aduce "&{mon(_vfte)}&" "&{CUR}&" venit în perioada analizată.")'),
+    ("NPS",
+     f'=IF({_nresp}=0,"Nu există răspunsuri NPS în perioadă. Fără ele, nemulțumirea clienților se vede abia când scad comenzile.",'
+     f'"NPS-ul este "&{mon(_nps)}&", din "&{mon(_nresp)}&" răspunsuri, cu "&{pct(_det,0)}&" detractori. "&'
+     f'IF({_nps}<{P["nps"]},"Este sub pragul agreat de "&{mon(P["nps"])}&"; detractorii intră în planul de acțiuni.",'
+     f'"Este peste pragul agreat.")&'
+     f'IF({_nresp}<20," Atenție: sub 20 de răspunsuri, cifra este orientativă, nu concluzivă.",""))'),
+    ("Țintă",
+     f'=IF({_tgt}=0,"Nu este completată o țintă de venit pentru perioadă (14_TINTE, nivel „Companie”). Fără ea nu se poate măsura gap-ul.",'
+     f'"Atingerea țintei este "&{pct(_ating)}&IF({_gap}>0,", mai lipsesc "&{mon(_gap)}&" "&{CUR}&" până la plan.",'
+     f'", ținta este depășită."))'),
+    ("Oportunități",
+     f'=IF({_oppn}=0,"Nu sunt încă oportunități completate în 30_OPORTUNITATI.",'
+     f'"Sunt "&{mon(_oppn)}&" oportunități identificate, cu valoare ponderată de "&{mon(_oppv)}&" "&{CUR}&'
+     f'IF(AND({_gap}>0,{_oppa}<>""),'
+     f'IF({_oppa}>=1,", mai mult decât suficient cât să acopere gap-ul față de țintă ("&{pct(_oppa,0)}&" din el).",'
+     f'", adică "&{pct(_oppa,0)}&" din gap-ul față de țintă."),"."))'),
+]
+
+rap_section(r, "CONCLUZII AUTOMATE (generate din date)"); r += 1
+for lab, formula in CONCLUZII:
+    ws.cell(row=r, column=1, value=lab).font = Font(bold=True, size=10, color=INK)
+    ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=4)
+    c = ws.cell(row=r, column=2, value=formula)
+    c.fill = PatternFill("solid", fgColor=CALC_FILL)
+    c.border = BORDER
+    c.font = Font(size=10, color="333333")
+    c.alignment = Alignment(wrap_text=True, vertical="center")
+    ws.row_dimensions[r].height = 30
+    r += 1
+ws.cell(row=r, column=1, value="Cum se folosesc").font = Font(size=9, italic=True, color=GREY_TXT)
+cnote = ws.cell(row=r, column=2, value="Sunt materie primă, nu text final: le citești, le verifici și scrii mai jos sinteza în limbajul clientului.")
+cnote.font = Font(size=9, italic=True, color=GREY_TXT)
+r += 2
 
 rap_section(r, "SINTEZA EXECUTIVĂ"); r += 1
 ws.cell(row=r, column=1, value="Concluzii (se scriu manual)").font = Font(bold=True, size=10, color=INK)
@@ -1404,11 +1581,11 @@ for k in range(1, 6):
 r += 1
 
 rap_section(r, "VALOAREA TOTALĂ A PLANULUI"); r += 1
-rap_row(r, "Valoare ponderată a oportunităților", f"='30_OPORTUNITATI'!${SL2}${hr+3}", F_MONEY,
+rap_row(r, "Valoare ponderată a oportunităților", f"='30_OPORTUNITATI'!${SL2}${hr_opp+3}", F_MONEY,
         "Suma scorurilor: impact ajustat cu probabilitatea și ușurința."); r += 1
 rap_row(r, "Gap față de țintă", f"='20_KPI'!$B${ROW['Gap față de țintă']}", F_MONEY,
         "Cât lipsește până la țintă în perioada analizată."); r += 1
-rap_row(r, "Acoperirea gapului", f"='30_OPORTUNITATI'!${SL2}${hr+7}", F_PCT,
+rap_row(r, "Acoperirea gapului", f"='30_OPORTUNITATI'!${SL2}${hr_opp+7}", F_PCT,
         "Peste 100% înseamnă că planul acoperă integral deficitul, dacă se execută."); r += 2
 
 rap_section(r, "PRIMELE 30 DE ZILE"); r += 1
@@ -1437,11 +1614,237 @@ nc.alignment = Alignment(wrap_text=True, vertical="top")
 ws.row_dimensions[r].height = 32
 ws.sheet_view.showGridLines = False
 
+
+# ---------------------------------------------------------------- 41_GRAFICE
+# Paleta: slot 1 albastru / slot 2 portocaliu din paleta categoriala validata;
+# gri pentru linia de referinta (tinta); rampa ordinala de albastru pentru prioritati.
+C_SER1, C_SER2, C_MUTED = "2A78D6", "EB6834", "898781"
+C_ORD = ("1C5CAB", "2A78D6", "86B6EF")          # HIGH / MEDIUM / LOW
+C_GOOD, C_WARN, C_BAD = "0CA30C", "FAB219", "D03B3B"   # promotori / pasivi / detractori
+
+ws = wb.create_sheet("41_GRAFICE")
+title_block(ws, "41 — GRAFICE",
+            "Se desenează singure din datele introduse. Dacă par goale, apasă Ctrl+Alt+F9 (recalculare completă). "
+            "Zona de calcul de sub grafice nu se editează.")
+ws.sheet_view.showGridLines = False
+
+DATA_ROW = 60          # zona de calcul care alimenteaza graficele
+MONTHS = 12
+m0, m1 = DATA_ROW + 1, DATA_ROW + MONTHS
+
+def hdr(cell, text, w=None):
+    c = ws[cell]
+    c.value = text
+    c.font = Font(bold=True, size=9, color=WHITE)
+    c.fill = PatternFill("solid", fgColor=INK)
+    c.alignment = Alignment(horizontal="center", wrap_text=True)
+    if w:
+        ws.column_dimensions[cell[0]].width = w
+
+def calc(cell, formula, fmt=None):
+    c = ws[cell]
+    c.value = formula
+    c.fill = PatternFill("solid", fgColor=CALC_FILL)
+    c.border = BORDER
+    c.font = Font(size=9, color=GREY_TXT)
+    if fmt:
+        c.number_format = fmt
+
+ws.cell(row=DATA_ROW - 1, column=1,
+        value="ZONA DE CALCUL PENTRU GRAFICE — nu se editează, nu se șterge.").font = \
+    Font(bold=True, size=10, color="9C2A2A")
+
+# --- T1: evolutia lunara (ultimele 12 luni pana la finalul perioadei analizate)
+for col, (t, w) in zip("ABCDEF", [("Lună", 11), ("Etichetă", 11), ("Venit net", 13),
+                                  ("Profit brut", 13), ("Țintă", 13), ("Marjă %", 10)]):
+    hdr(f"{col}{DATA_ROW}", t, w)
+for k in range(1, MONTHS + 1):
+    rr = DATA_ROW + k
+    ms, me = f"$A{rr}", f'DATE(YEAR($A{rr}),MONTH($A{rr})+1,0)'
+    calc(f"A{rr}", f'=DATE(YEAR({ct}),MONTH({ct})+{k}-{MONTHS},1)', "yyyy-mm")
+    calc(f"B{rr}", f'={ym(ms)}')
+    calc(f"C{rr}", f'=SUMIFS({TX_REV},{TX_DATE},">="&{ms},{TX_DATE},"<="&{me})', F_MONEY)
+    calc(f"D{rr}", f'=SUMIFS({TX_GP},{TX_DATE},">="&{ms},{TX_DATE},"<="&{me})', F_MONEY)
+    calc(f"E{rr}", f'=SUMIFS({TG_VAL},{TG_DATE},">="&{ms},{TG_DATE},"<="&{me},'
+                   f'{TG_METRIC},"Venit",{TG_SCOPE},"Companie")', F_MONEY)
+    calc(f"F{rr}", f'=IFERROR($D{rr}/$C{rr},0)', F_PCT)
+
+# --- T2 / T3: clasamente
+def clasament(col_nume, col_val, titlu, sheet, col_eticheta, col_valoare, cheie, f, l, n=10):
+    hdr(f"{col_nume}{DATA_ROW}", titlu, 26)
+    hdr(f"{col_val}{DATA_ROW}", "Venit net", 13)
+    key = f"'{sheet}'!${cheie}${f}:${cheie}${l}"
+    for k in range(1, n + 1):
+        rr = DATA_ROW + k
+        mt = f'MATCH(LARGE({key},{k}),{key},0)'
+        calc(f"{col_nume}{rr}", f"=IFERROR(INDEX('{sheet}'!${col_eticheta}${f}:${col_eticheta}${l},{mt}),\"\")")
+        calc(f"{col_val}{rr}", f"=IFERROR(INDEX('{sheet}'!${col_valoare}${f}:${col_valoare}${l},{mt}),0)", F_MONEY)
+
+clasament("H", "I", "Top 10 clienți", "21_ANALIZA_CLIENTI", "B", "E", KEY_A, fA, lA)
+clasament("K", "L", "Top 10 produse", "22_ANALIZA_PRODUSE", "B", "D", KEY_P, fP, lP)
+
+# --- T4: structura NPS
+hdr(f"N{DATA_ROW}", "Categorie NPS", 16)
+hdr(f"O{DATA_ROW}", "Răspunsuri", 12)
+nps_win = f'({NP_DATE}>={cf})*({NP_DATE}<={ct})'
+for k, (eticheta, cond) in enumerate([
+        ("Promotori (9-10)", f'({NP_SCORE}>=9)'),
+        ("Pasivi (7-8)", f'({NP_SCORE}>=7)*({NP_SCORE}<=8)'),
+        ("Detractori (0-6)", f'({NP_SCORE}<=6)*({NP_SCORE}<>"")')], start=1):
+    rr = DATA_ROW + k
+    calc(f"N{rr}", f'="{eticheta}"')
+    calc(f"O{rr}", f'=SUMPRODUCT({nps_win}*{cond})', F_INT)
+
+# --- T5: oportunitati pe prioritate
+hdr(f"Q{DATA_ROW}", "Prioritate", 14)
+hdr(f"R{DATA_ROW}", "Valoare ponderată", 15)
+for k, pri in enumerate(("HIGH", "MEDIUM", "LOW"), start=1):
+    rr = DATA_ROW + k
+    calc(f"Q{rr}", f'="{pri}"')
+    calc(f"R{rr}", f'=SUMIF(\'30_OPORTUNITATI\'!$J${first_opp}:$J${last_opp},"{pri}",'
+                   f'\'30_OPORTUNITATI\'!$I${first_opp}:$I${last_opp})', F_MONEY)
+
+
+def etichete_text(ch, ref):
+    """Categoriile sunt text; fara asta openpyxl le declara ca numere si Excel
+    afiseaza 1, 2, 3... in loc de etichete."""
+    for ser in ch.series:
+        if ser.cat is not None:
+            ser.cat.numRef = None
+            ser.cat.strRef = StrRef(f=ref)
+
+
+def stil_axe(ch, numfmt=F_MONEY, grid=False):
+    # La bare verticale ("col") axa de categorii e jos; la bare orizontale ("bar"), la stanga.
+    orizontal = getattr(ch, "type", "col") == "bar"
+    ch.x_axis.axPos = "l" if orizontal else "b"
+    ch.y_axis.axPos = "b" if orizontal else "l"
+    ch.x_axis.delete = False
+    ch.y_axis.delete = False
+    ch.y_axis.numFmt = numfmt
+    ch.y_axis.majorGridlines = None if not grid else ch.y_axis.majorGridlines
+    for ax in (ch.x_axis, ch.y_axis):
+        ax.spPr = GraphicalProperties()
+        ax.spPr.ln = LineProperties(solidFill="C3C2B7", w=6350)
+    ch.style = None
+
+
+def culoare(ser, hexa, line=False):
+    ser.graphicalProperties = GraphicalProperties(solidFill=hexa)
+    if line:
+        ser.graphicalProperties.line = LineProperties(solidFill=hexa, w=25400)
+        ser.graphicalProperties.solidFill = None
+    else:
+        ser.graphicalProperties.line = LineProperties(noFill=True)
+
+
+# 1. Venit si profit brut pe luna (aceeasi unitate => o singura axa) + tinta ca referinta
+ch1 = BarChart()
+ch1.type, ch1.grouping, ch1.gapWidth, ch1.overlap = "col", "clustered", 60, -10
+ch1.title = "Venit net și profit brut, pe lună"
+ch1.add_data(Reference(ws, min_col=3, max_col=4, min_row=DATA_ROW, max_row=m1), titles_from_data=True)
+ch1.set_categories(Reference(ws, min_col=2, min_row=m0, max_row=m1))
+culoare(ch1.series[0], C_SER1)
+culoare(ch1.series[1], C_SER2)
+ln = LineChart()
+ln.add_data(Reference(ws, min_col=5, min_row=DATA_ROW, max_row=m1), titles_from_data=True)
+culoare(ln.series[0], C_MUTED, line=True)
+ln.series[0].smooth = False
+ch1 += ln
+etichete_text(ch1, f"'41_GRAFICE'!$B${m0}:$B${m1}")
+stil_axe(ch1, grid=True)
+ch1.y_axis.title = None
+ch1.legend.position = "b"
+ch1.width, ch1.height = 17, 8.5
+ws.add_chart(ch1, "A4")
+
+# 2. Marja bruta % pe luna (alta unitate => grafic separat, niciodata a doua axa)
+ch2 = LineChart()
+ch2.title = "Marjă brută %, pe lună"
+ch2.add_data(Reference(ws, min_col=6, min_row=DATA_ROW, max_row=m1), titles_from_data=True)
+ch2.set_categories(Reference(ws, min_col=2, min_row=m0, max_row=m1))
+culoare(ch2.series[0], C_SER1, line=True)
+ch2.series[0].smooth = False
+etichete_text(ch2, f"'41_GRAFICE'!$B${m0}:$B${m1}")
+stil_axe(ch2, numfmt="0.0%", grid=True)
+ch2.legend = None
+ch2.width, ch2.height = 17, 8.5
+ws.add_chart(ch2, "L4")
+
+# 3. Top 10 clienti
+ch3 = BarChart()
+ch3.type, ch3.gapWidth = "bar", 45
+ch3.title = "Top 10 clienți după venit (perioada curentă)"
+ch3.add_data(Reference(ws, min_col=9, min_row=DATA_ROW, max_row=DATA_ROW + 10), titles_from_data=True)
+ch3.set_categories(Reference(ws, min_col=8, min_row=m0, max_row=DATA_ROW + 10))
+culoare(ch3.series[0], C_SER1)
+etichete_text(ch3, f"'41_GRAFICE'!$H${m0}:$H${DATA_ROW + 10}")
+stil_axe(ch3)
+ch3.legend = None
+ch3.dataLabels = DataLabelList()
+ch3.dataLabels.showVal = True
+ch3.dataLabels.numFmt = F_MONEY
+ch3.width, ch3.height = 17, 9.5
+ws.add_chart(ch3, "A22")
+
+# 4. Top 10 produse
+ch4 = BarChart()
+ch4.type, ch4.gapWidth = "bar", 45
+ch4.title = "Top 10 produse după venit (perioada curentă)"
+ch4.add_data(Reference(ws, min_col=12, min_row=DATA_ROW, max_row=DATA_ROW + 10), titles_from_data=True)
+ch4.set_categories(Reference(ws, min_col=11, min_row=m0, max_row=DATA_ROW + 10))
+culoare(ch4.series[0], C_SER1)
+etichete_text(ch4, f"'41_GRAFICE'!$K${m0}:$K${DATA_ROW + 10}")
+stil_axe(ch4)
+ch4.legend = None
+ch4.dataLabels = DataLabelList()
+ch4.dataLabels.showVal = True
+ch4.dataLabels.numFmt = F_MONEY
+ch4.width, ch4.height = 17, 9.5
+ws.add_chart(ch4, "L22")
+
+# 5. Structura NPS (culori de stare, dar categoriile sunt scrise, nu doar colorate)
+ch5 = BarChart()
+ch5.type, ch5.gapWidth = "col", 80
+ch5.title = "Structura răspunsurilor NPS"
+ch5.add_data(Reference(ws, min_col=15, min_row=DATA_ROW, max_row=DATA_ROW + 3), titles_from_data=True)
+ch5.set_categories(Reference(ws, min_col=14, min_row=m0, max_row=DATA_ROW + 3))
+culoare(ch5.series[0], C_GOOD)
+ch5.series[0].data_points = [
+    DataPoint(idx=i, spPr=GraphicalProperties(solidFill=hexa, ln=LineProperties(noFill=True)))
+    for i, hexa in enumerate((C_GOOD, C_WARN, C_BAD))]
+etichete_text(ch5, f"'41_GRAFICE'!$N${m0}:$N${DATA_ROW + 3}")
+stil_axe(ch5, numfmt=F_INT)
+ch5.legend = None
+ch5.dataLabels = DataLabelList()
+ch5.dataLabels.showVal = True
+ch5.width, ch5.height = 17, 8.5
+ws.add_chart(ch5, "A40")
+
+# 6. Oportunitati pe prioritate (rampa ordinala, o singura nuanta)
+ch6 = BarChart()
+ch6.type, ch6.gapWidth = "col", 80
+ch6.title = "Valoarea ponderată a oportunităților, pe prioritate"
+ch6.add_data(Reference(ws, min_col=18, min_row=DATA_ROW, max_row=DATA_ROW + 3), titles_from_data=True)
+ch6.set_categories(Reference(ws, min_col=17, min_row=m0, max_row=DATA_ROW + 3))
+culoare(ch6.series[0], C_ORD[0])
+ch6.series[0].data_points = [
+    DataPoint(idx=i, spPr=GraphicalProperties(solidFill=C_ORD[i], ln=LineProperties(noFill=True)))
+    for i in range(3)]
+etichete_text(ch6, f"'41_GRAFICE'!$Q${m0}:$Q${DATA_ROW + 3}")
+stil_axe(ch6)
+ch6.legend = None
+ch6.dataLabels = DataLabelList()
+ch6.dataLabels.showVal = True
+ch6.dataLabels.numFmt = F_MONEY
+ch6.width, ch6.height = 17, 8.5
+ws.add_chart(ch6, "L40")
+
 # ordinea foilor
-order = ["00_GHID", "01_FIRMA", "02_CONTACTE", "03_CHECKLIST_DATE", SH_PAR,
+order = ["00_GHID", "01_FIRMA", "02_CONTACTE", "03_CHECKLIST_DATE", "04_DICTIONAR", SH_PAR,
          SH_CLIENTI, SH_PRODUSE, SH_OAMENI, SH_VANZARI, SH_TINTE, SH_NPS,
          "20_KPI", "21_ANALIZA_CLIENTI", "22_ANALIZA_PRODUSE", "23_ANALIZA_OAMENI",
-         "30_OPORTUNITATI", "40_RAPORT", "90_LISTE"]
+         "30_OPORTUNITATI", "40_RAPORT", "41_GRAFICE", "90_LISTE"]
 wb._sheets = [wb[s] for s in order]
 wb.active = 0
 

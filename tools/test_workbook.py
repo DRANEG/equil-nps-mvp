@@ -175,8 +175,27 @@ for i in range(2):
         val("23_ANALIZA_OAMENI", f"M{r}"), val("23_ANALIZA_OAMENI", f"N{r}"),
         val("23_ANALIZA_OAMENI", f"O{r}")))
 
-print("\n== Raport (40_RAPORT) — top oportunități ==")
 rap = wb["40_RAPORT"]
+print("\n== Concluzii automate (40_RAPORT) ==")
+concl_start = next(r for r in range(1, rap.max_row + 1)
+                   if str(rap.cell(row=r, column=1).value or "").startswith("CONCLUZII"))
+for r in range(concl_start + 1, concl_start + 9):
+    lab = rap.cell(row=r, column=1).value
+    print(f"  {lab:16s} {val('40_RAPORT', f'B{r}')}")
+
+print("\n== Zona de calcul a graficelor (41_GRAFICE) ==")
+print("  ultimele 3 luni:")
+for rr in (70, 71, 72):
+    print("    %s venit=%-10s profit=%-9s țintă=%-9s marjă=%s" % (
+        val("41_GRAFICE", f"B{rr}"), val("41_GRAFICE", f"C{rr}"),
+        val("41_GRAFICE", f"D{rr}"), val("41_GRAFICE", f"E{rr}"),
+        val("41_GRAFICE", f"F{rr}")))
+print("  top clienți:", [(val("41_GRAFICE", f"H{61+i}"), val("41_GRAFICE", f"I{61+i}")) for i in range(4)])
+print("  top produse:", [(val("41_GRAFICE", f"K{61+i}"), val("41_GRAFICE", f"L{61+i}")) for i in range(3)])
+print("  NPS:", [(val("41_GRAFICE", f"N{61+i}"), val("41_GRAFICE", f"O{61+i}")) for i in range(3)])
+print("  oportunități:", [(val("41_GRAFICE", f"Q{61+i}"), val("41_GRAFICE", f"R{61+i}")) for i in range(3)])
+
+print("\n== Raport (40_RAPORT) — top oportunități ==")
 start = next(r for r in range(1, rap.max_row + 1)
              if str(rap.cell(row=r, column=1).value or "").startswith("TOP 5"))
 for r in range(start + 2, start + 7):

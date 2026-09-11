@@ -10,6 +10,8 @@ ale unei firme în KPI, semnale de risc și oportunități de creștere prioriti
 | `dist/EQUIL_Growth_Intelligence_v0_2.xlsx` | Fișierul de lucru, gata de folosit |
 | `tools/build_equil_workbook.py` | Generatorul fișierului (sursa adevărului) |
 | `tools/test_workbook.py` | Test automat: construiește o versiune mică, o populează cu date și verifică valorile calculate |
+| `tools/audit_formulas.py` | Audit static: paranteze, referințe, funcții incompatibile cu Excel 2016 |
+| `tools/glosar.py` | Cei 66 de termeni din foaia `04_DICTIONAR` |
 
 Fișierul nu se editează structural direct în Excel — se modifică generatorul și se
 regenerează, ca să nu se piardă modificările:
@@ -18,10 +20,11 @@ regenerează, ca să nu se piardă modificările:
 pip install openpyxl
 python3 tools/build_equil_workbook.py     # -> dist/EQUIL_Growth_Intelligence_v0_2.xlsx
 pip install formulas                      # doar pentru test
-python3 tools/test_workbook.py            # verifică formulele pe date de test
+python3 tools/audit_formulas.py           # verificare statică a formulelor
+python3 tools/test_workbook.py            # verifică valorile calculate pe date de test
 ```
 
-## Structura workbook-ului (18 foi)
+## Structura workbook-ului (20 de foi)
 
 **Colectare de date — cine dă ce**
 - `00_GHID` — mod de lucru, cod de culori, setul minim viabil, reguli de igienă a datelor
@@ -29,6 +32,8 @@ python3 tools/test_workbook.py            # verifică formulele pe date de test
 - `02_CONTACTE` — data owners: ce set de date deține fiecare om din firmă, cu termen și status
 - `03_CHECKLIST_DATE` — fiecare câmp cerut: ce înseamnă, format, exemplu, din ce sistem se scoate,
   ce rol îl poate da, ce KPI deblochează, status și dată de primire; are și un contor de progres
+- `04_DICTIONAR` — 66 de termeni (NDA, ERP, CRM, COGS, FTE, NPS…) explicați, fiecare cu formularea
+  pe care o poți folosi direct în discuția cu clientul
 
 **Control**
 - `09_PARAMETRI` — perioada analizată, perioada de comparație și toate pragurile de semnal
@@ -47,10 +52,18 @@ python3 tools/test_workbook.py            # verifică formulele pe date de test
 
 **Rezultat**
 - `30_OPORTUNITATI` — prioritizare: scor = impact × probabilitate × ușurință
-- `40_RAPORT` — structura pentru clientul final, populată automat
+- `40_RAPORT` — structura pentru clientul final, cu 8 concluzii generate automat din date
+- `41_GRAFICE` — 6 grafice native Excel, desenate din datele introduse
 - `90_LISTE` — listele pentru validările de tip dropdown
 
 ## Compatibilitate
 
-Fără funcții dinamice (`UNIQUE`, `FILTER`, `LET`, `IFS`, `MAXIFS`). Funcționează în
-Excel 2016+, Microsoft 365, LibreOffice Calc și Google Sheets.
+Fără funcții dinamice (`UNIQUE`, `FILTER`, `LET`, `IFS`, `MAXIFS`) și fără `TEXT()` cu
+coduri de format — acelea depind de limba interfeței Excel. Funcționează în Excel 2016+,
+Microsoft 365, LibreOffice Calc și Google Sheets, în interfață română sau engleză.
+`tools/audit_formulas.py` refuză build-ul dacă apare vreuna dintre funcțiile interzise.
+
+## Un fișier pentru fiecare firmă
+
+Fiecare firmă primește un cod în `01_FIRMA` (EQ-0001, EQ-0002…) și un fișier propriu,
+numit `EQUIL_<cod>_<NumeFirma>_<AAAA-LL>.xlsx`. Șablonul curat rămâne nemodificat.
