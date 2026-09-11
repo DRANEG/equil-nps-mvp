@@ -1,4 +1,7 @@
 import { createServer } from 'node:http';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { openDb } from './db.js';
 import { createMailer } from './mailer.js';
 import { startScheduler } from './scheduler.js';
@@ -6,6 +9,37 @@ import { html, send, redirect, json } from './http.js';
 import { noticePage } from './views/survey.js';
 import * as pub from './routes/public.js';
 import * as admin from './routes/admin.js';
+
+const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
+
+// Fisierele statice ale aplicatiei instalabile (PWA). Se citesc o data si raman
+// in memorie: sunt mici si nu se schimba in timpul rularii.
+const STATIC_FILES = {
+  '/manifest.webmanifest': ['manifest.webmanifest', 'application/manifest+json; charset=utf-8', 'public, max-age=3600'],
+  '/sw.js': ['sw.js', 'text/javascript; charset=utf-8', 'no-cache'],
+  '/sondaj.js': ['sondaj.js', 'text/javascript; charset=utf-8', 'public, max-age=3600'],
+  '/icons/icon-192.png': ['icons/icon-192.png', 'image/png', 'public, max-age=604800'],
+  '/icons/icon-512.png': ['icons/icon-512.png', 'image/png', 'public, max-age=604800'],
+  '/icons/icon-maskable-512.png': ['icons/icon-maskable-512.png', 'image/png', 'public, max-age=604800'],
+};
+
+const staticCache = new Map();
+
+function serveStatic(res, pathname) {
+  const entry = STATIC_FILES[pathname];
+  if (!entry) return false;
+  const [file, type, cacheControl] = entry;
+  if (!staticCache.has(pathname)) {
+    staticCache.set(pathname, readFileSync(join(PUBLIC_DIR, file)));
+  }
+  const body = staticCache.get(pathname);
+  send(res, 200, body, {
+    'Content-Type': type,
+    'Cache-Control': cacheControl,
+    'Content-Length': body.length,
+  });
+  return true;
+}
 
 // Tabela de rutare: metoda + sablon de cale (":x" devine parametru).
 const ROUTES = [
@@ -16,6 +50,7 @@ const ROUTES = [
   ['POST', '/raspunde', pub.submitResponse],
   ['POST', '/api/raspunsuri', pub.submitResponseApi],
   ['GET', '/multumim', pub.thanks],
+  ['GET', '/offline', pub.offline],
   ['GET', '/dezabonare/:token', pub.unsubscribeForm],
   ['POST', '/dezabonare/:token', pub.unsubscribe],
 
@@ -31,6 +66,15 @@ const ROUTES = [
   ['POST', '/admin/campanii/:id/invitatii', admin.invitesCreate, true],
   ['POST', '/admin/campanii/:id/trimite', admin.campaignSendNow, true],
   ['POST', '/admin/campanii/:id/auto', admin.campaignAutoSend, true],
+  ['POST', '/admin/campanii/:id/intrebari', admin.questionCreate, true],
+  ['POST', '/admin/campanii/:id/intrebari-standard', admin.questionsStandard, true],
+  ['POST', '/admin/intrebari/:id/sterge', admin.questionDelete, true],
+  ['POST', '/admin/intrebari/:id/muta', admin.questionMove, true],
+  ['GET', '/admin/locatii', admin.locationsList, true],
+  ['POST', '/admin/locatii', admin.locationCreate, true],
+  ['POST', '/admin/locatii/:id/status', admin.locationStatus, true],
+  ['GET', '/admin/afise', admin.posters, true],
+  ['GET', '/admin/qr.svg', admin.qrImage, true],
   ['GET', '/admin/campanii/:id/invitatii.csv', admin.invitesCsv, true],
   ['GET', '/admin/raspunsuri', admin.responsesList, true],
   ['GET', '/admin/raspunsuri.csv', admin.responsesCsv, true],
@@ -58,6 +102,8 @@ export function createApp({ db, adminToken, publicUrl, mailer = null }) {
   return async function handler(req, res) {
     const url = new URL(req.url, publicUrl);
     const pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, '') : url.pathname;
+
+    if (req.method === 'GET' && serveStatic(res, pathname)) return;
 
     for (const [method, pattern, handlerFn, needsAuth] of ROUTES) {
       if (method !== req.method) continue;

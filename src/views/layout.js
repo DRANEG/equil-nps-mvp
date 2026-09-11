@@ -63,6 +63,14 @@ pre { background: #0f1115; color: #e6e9ef; padding: 12px; border-radius: 8px; ov
 .scale input:checked + span { background: var(--accent); border-color: var(--accent); color: #fff; }
 .scale input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
 .scale-ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; }
+.scale--5 { grid-template-columns: repeat(5, 1fr); }
+.choices { display: flex; flex-direction: column; gap: 6px; margin: 10px 0 4px; }
+.choices .choice { margin: 0; font-weight: 500; }
+.choices input { position: absolute; opacity: 0; pointer-events: none; }
+.choices span { display: block; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px;
+  background: #fff; cursor: pointer; }
+.choices input:checked + span { background: var(--accent); border-color: var(--accent); color: #fff; }
+.choices input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
 .spark { display: flex; gap: 4px; align-items: flex-end; height: 70px; }
 .spark div { flex: 1; max-width: 72px; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 2px; opacity: .85; }
 .spark-labels div { max-width: 72px; }
@@ -70,17 +78,24 @@ pre { background: #0f1115; color: #e6e9ef; padding: 12px; border-radius: 8px; ov
 .spark-labels div { flex: 1; text-align: center; }
 @media (max-width: 620px) {
   .scale { grid-template-columns: repeat(6, 1fr); }
+  .scale--5 { grid-template-columns: repeat(5, 1fr); }
   .scale span { padding: 10px 0; font-size: 14px; }
 }
 `;
 
-export function page({ title, body, nav = '', narrow = false }) {
+export function page({ title, body, nav = '', narrow = false, scripts = [] }) {
   return `<!doctype html>
 <html lang="ro">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
+<meta name="theme-color" content="#2f5bea">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Equil NPS">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="icon" href="/icons/icon-192.png">
 <title>${escapeHtml(title)}</title>
 <style>${CSS}</style>
 </head>
@@ -89,6 +104,15 @@ ${nav}
 <main class="wrap${narrow ? ' wrap--narrow' : ''}">
 ${body}
 </main>
+${scripts.map((src) => `<script src="${src}" defer></script>`).join('')}
+<script>
+  // Instalabila pe telefon (Android: Chrome -> "Instaleaza aplicatia").
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function () {});
+    });
+  }
+</script>
 </body>
 </html>`;
 }
@@ -101,6 +125,7 @@ export function adminNav(active = '') {
     <nav>
       ${link('/admin', 'home', 'Dashboard')}
       ${link('/admin/campanii', 'campaigns', 'Campanii')}
+      ${link('/admin/locatii', 'locations', 'Locații')}
       ${link('/admin/raspunsuri', 'responses', 'Răspunsuri')}
       <a href="/admin/logout">Ieșire</a>
     </nav>

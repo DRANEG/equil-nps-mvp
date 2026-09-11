@@ -51,6 +51,41 @@ CREATE TABLE IF NOT EXISTS responses (
   created_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Locatiile fizice (magazin, cabinet, punct de lucru). Fiecare are codul ei QR,
+-- ca sa stii din ce loc vine feedbackul.
+CREATE TABLE IF NOT EXISTS locations (
+  id         INTEGER PRIMARY KEY,
+  slug       TEXT NOT NULL UNIQUE,
+  name       TEXT NOT NULL,
+  address    TEXT,
+  active     INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Intrebari suplimentare, in afara de scorul NPS: rating 1-5, alegere sau text liber.
+CREATE TABLE IF NOT EXISTS questions (
+  id          INTEGER PRIMARY KEY,
+  campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+  position    INTEGER NOT NULL DEFAULT 0,
+  kind        TEXT NOT NULL,
+  text        TEXT NOT NULL,
+  options     TEXT,
+  topic       TEXT,
+  required    INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS answers (
+  id          INTEGER PRIMARY KEY,
+  response_id INTEGER NOT NULL REFERENCES responses(id) ON DELETE CASCADE,
+  question_id INTEGER NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+  value       TEXT NOT NULL,
+  UNIQUE (response_id, question_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_questions_campaign ON questions(campaign_id, position);
+CREATE INDEX IF NOT EXISTS idx_answers_question ON answers(question_id);
+
 -- Istoricul trimiterilor: fiecare incercare, reusita sau nu.
 CREATE TABLE IF NOT EXISTS email_log (
   id          INTEGER PRIMARY KEY,
@@ -74,6 +109,7 @@ const MIGRATIONS = [
   ['contacts', 'unsubscribed_at', 'TEXT'],
   ['invites', 'reminder_sent_at', 'TEXT'],
   ['invites', 'send_error', 'TEXT'],
+  ['responses', 'location_id', 'INTEGER REFERENCES locations(id) ON DELETE SET NULL'],
 ];
 
 export function openDb(file = process.env.NPS_DB || './data/nps.db') {
@@ -139,7 +175,7 @@ export function listCampaigns(db) {
               (SELECT COUNT(*) FROM invites i WHERE i.campaign_id = c.id)   AS invites,
               (SELECT COUNT(*) FROM responses r WHERE r.campaign_id = c.id) AS responses
        FROM campaigns c
-       ORDER BY c.active DESC, c.created_at DESC`,
+       ORDER BY c.active DESC, c.created_at DESC, c.id DESC`,
     )
     .all();
 }
@@ -215,17 +251,21 @@ export function markInvitesSent(db, campaignId) {
 
 /* --------------------------------- raspunsuri -------------------------------- */
 
-export function saveResponse(db, { campaignId, inviteId = null, contactId = null, score, category, comment, source = 'link' }) {
+export function saveResponse(db, {
+  campaignId, inviteId = null, contactId = null, score, category, comment,
+  source = 'link', locationId = null,
+}) {
   const info = db
     .prepare(
-      `INSERT INTO responses (campaign_id, invite_id, contact_id, score, category, comment, source)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO responses (campaign_id, invite_id, contact_id, score, category, comment, source, location_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(invite_id) DO UPDATE SET
          score = excluded.score, category = excluded.category,
          comment = COALESCE(NULLIF(excluded.comment, ''), responses.comment),
+         location_id = COALESCE(excluded.location_id, responses.location_id),
          created_at = datetime('now')`,
     )
-    .run(campaignId, inviteId, contactId, score, category, comment || null, source);
+    .run(campaignId, inviteId, contactId, score, category, comment || null, source, locationId);
   if (inviteId) {
     db.prepare("UPDATE invites SET responded_at = datetime('now') WHERE id = ?").run(inviteId);
     return db.prepare('SELECT * FROM responses WHERE invite_id = ?').get(inviteId);
@@ -445,4 +485,178 @@ export function unsubscribeByToken(db, token) {
   if (!invite) return null;
   db.prepare("UPDATE contacts SET unsubscribed_at = datetime('now') WHERE id = ?").run(invite.contact_id);
   return invite;
+}
+
+/* ---------------------------------- locatii ---------------------------------- */
+
+export function createLocation(db, { name, address = null, slug = null }) {
+  let base = slugify(slug || name);
+  let candidate = base;
+  let i = 2;
+  while (getLocationBySlug(db, candidate)) candidate = `${base}-${i++}`;
+  const info = db
+    .prepare('INSERT INTO locations (slug, name, address) VALUES (?, ?, ?)')
+    .run(candidate, name, address);
+  return db.prepare('SELECT * FROM locations WHERE id = ?').get(Number(info.lastInsertRowid));
+}
+
+export function getLocationBySlug(db, slug) {
+  return db.prepare('SELECT * FROM locations WHERE slug = ?').get(slug);
+}
+
+export function listLocations(db, { onlyActive = false } = {}) {
+  const where = onlyActive ? 'WHERE l.active = 1' : '';
+  return db
+    .prepare(
+      `SELECT l.*, (SELECT COUNT(*) FROM responses r WHERE r.location_id = l.id) AS responses
+       FROM locations l ${where} ORDER BY l.active DESC, l.name`,
+    )
+    .all();
+}
+
+export function setLocationActive(db, id, active) {
+  db.prepare('UPDATE locations SET active = ? WHERE id = ?').run(active ? 1 : 0, id);
+}
+
+// NPS pe locatie, pentru dashboard: unde anume e problema.
+export function breakdownByLocation(db, campaignId = null) {
+  const params = [];
+  let sql = `SELECT COALESCE(l.name, '(fără locație)') AS bucket,
+                    COUNT(*) AS total,
+                    SUM(CASE WHEN r.category = 'promoter'  THEN 1 ELSE 0 END) AS promoters,
+                    SUM(CASE WHEN r.category = 'passive'   THEN 1 ELSE 0 END) AS passives,
+                    SUM(CASE WHEN r.category = 'detractor' THEN 1 ELSE 0 END) AS detractors
+             FROM responses r
+             LEFT JOIN locations l ON l.id = r.location_id`;
+  if (campaignId) {
+    sql += ' WHERE r.campaign_id = ?';
+    params.push(campaignId);
+  }
+  sql += ' GROUP BY bucket ORDER BY total DESC';
+  return db
+    .prepare(sql)
+    .all(...params)
+    .map((row) => ({
+      ...row,
+      nps: row.total ? Math.round(((row.promoters - row.detractors) / row.total) * 100) : null,
+    }));
+}
+
+/* --------------------------------- intrebari --------------------------------- */
+
+export const QUESTION_KINDS = ['rating', 'choice', 'text'];
+
+// Setul propus la un click: cate o intrebare despre produs, experienta si locatie.
+export const STANDARD_QUESTIONS = [
+  { kind: 'rating', topic: 'produs', text: 'Cât de mulțumit ești de produsul în sine?', required: 1 },
+  { kind: 'rating', topic: 'experienta', text: 'Cum a fost experiența cu echipa noastră?', required: 1 },
+  { kind: 'rating', topic: 'locatie', text: 'Cât de ușor a fost să ajungi la noi (acces, parcare, program)?', required: 0 },
+  {
+    kind: 'choice', topic: 'experienta', text: 'Ce ți-a plăcut cel mai mult?',
+    options: ['Produsul', 'Oamenii', 'Rapiditatea', 'Prețul', 'Altceva'], required: 0,
+  },
+  { kind: 'text', topic: 'produs', text: 'Ce ar trebui să îmbunătățim primul?', required: 0 },
+];
+
+export function addQuestion(db, campaignId, { kind, text, options = null, topic = null, required = false }) {
+  if (!QUESTION_KINDS.includes(kind)) throw new Error(`Tip de întrebare necunoscut: ${kind}`);
+  const next = db
+    .prepare('SELECT COALESCE(MAX(position), 0) + 1 AS p FROM questions WHERE campaign_id = ?')
+    .get(campaignId).p;
+  const info = db
+    .prepare(
+      'INSERT INTO questions (campaign_id, position, kind, text, options, topic, required) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    )
+    .run(campaignId, next, kind, text, options ? JSON.stringify(options) : null, topic, required ? 1 : 0);
+  return getQuestion(db, Number(info.lastInsertRowid));
+}
+
+export function addStandardQuestions(db, campaignId) {
+  for (const q of STANDARD_QUESTIONS) addQuestion(db, campaignId, q);
+  return listQuestions(db, campaignId);
+}
+
+function hydrate(row) {
+  if (!row) return row;
+  return { ...row, options: row.options ? JSON.parse(row.options) : null };
+}
+
+export function getQuestion(db, id) {
+  return hydrate(db.prepare('SELECT * FROM questions WHERE id = ?').get(id));
+}
+
+export function listQuestions(db, campaignId) {
+  return db
+    .prepare('SELECT * FROM questions WHERE campaign_id = ? ORDER BY position, id')
+    .all(campaignId)
+    .map(hydrate);
+}
+
+export function deleteQuestion(db, id) {
+  db.prepare('DELETE FROM questions WHERE id = ?').run(id);
+}
+
+// Mutarea in sus/jos: schimbam pozitia cu vecinul imediat.
+export function moveQuestion(db, id, direction) {
+  const q = getQuestion(db, id);
+  if (!q) return;
+  const neighbour = db
+    .prepare(
+      `SELECT * FROM questions
+       WHERE campaign_id = ? AND position ${direction === 'sus' ? '<' : '>'} ?
+       ORDER BY position ${direction === 'sus' ? 'DESC' : 'ASC'} LIMIT 1`,
+    )
+    .get(q.campaign_id, q.position);
+  if (!neighbour) return;
+  db.prepare('UPDATE questions SET position = ? WHERE id = ?').run(neighbour.position, q.id);
+  db.prepare('UPDATE questions SET position = ? WHERE id = ?').run(q.position, neighbour.id);
+}
+
+export function saveAnswers(db, responseId, answers) {
+  const stmt = db.prepare(
+    `INSERT INTO answers (response_id, question_id, value) VALUES (?, ?, ?)
+     ON CONFLICT(response_id, question_id) DO UPDATE SET value = excluded.value`,
+  );
+  for (const { questionId, value } of answers) {
+    if (value === null || value === undefined || String(value).trim() === '') continue;
+    stmt.run(responseId, questionId, String(value).slice(0, 2000));
+  }
+}
+
+export function listAnswers(db, responseId) {
+  return db
+    .prepare(
+      `SELECT a.*, q.text, q.kind, q.topic FROM answers a
+       JOIN questions q ON q.id = a.question_id
+       WHERE a.response_id = ? ORDER BY q.position, q.id`,
+    )
+    .all(responseId);
+}
+
+// Rezultatele agregate: distributie pentru rating/alegere, ultimele texte pentru text liber.
+export function questionResults(db, campaignId) {
+  return listQuestions(db, campaignId).map((q) => {
+    if (q.kind === 'text') {
+      const texts = db
+        .prepare(
+          `SELECT a.value, r.created_at FROM answers a
+           JOIN responses r ON r.id = a.response_id
+           WHERE a.question_id = ? ORDER BY r.created_at DESC LIMIT 10`,
+        )
+        .all(q.id);
+      return { ...q, total: texts.length, texts };
+    }
+    const counts = db
+      .prepare(
+        `SELECT a.value, COUNT(*) AS n FROM answers a
+         WHERE a.question_id = ? GROUP BY a.value ORDER BY a.value`,
+      )
+      .all(q.id);
+    const total = counts.reduce((sum, row) => sum + row.n, 0);
+    const average =
+      q.kind === 'rating' && total
+        ? Math.round((counts.reduce((sum, row) => sum + Number(row.value) * row.n, 0) / total) * 10) / 10
+        : null;
+    return { ...q, total, counts, average };
+  });
 }

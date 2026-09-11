@@ -19,7 +19,10 @@ export function loginPage(error = null) {
   return page({ title: 'Autentificare', body, narrow: true });
 }
 
-export function dashboardPage({ summary, moe, trend, segments, recent, campaigns, campaignId, invitesSent, publicUrl }) {
+export function dashboardPage({
+  summary, moe, trend, segments, locations = [], questions = [], recent,
+  campaigns, campaignId, invitesSent, publicUrl,
+}) {
   const filter = campaignSelect(campaigns, campaignId, '/admin');
   const responseRate = invitesSent ? Math.round((summary.total / invitesSent) * 100) : null;
 
@@ -56,6 +59,13 @@ ${filter}
   <h2 style="margin-top:0">Defalcare pe segment</h2>
   ${breakdownTable(segments)}
 </div>
+
+<div class="card">
+  <h2 style="margin-top:0">Defalcare pe locație</h2>
+  ${breakdownTable(locations, 'Locație')}
+</div>
+
+${questionResultsCard(questions)}
 
 <div class="card">
   <h2 style="margin-top:0">Ultimele comentarii</h2>
@@ -111,7 +121,7 @@ ${flash ? `<div class="flash">${escapeHtml(flash)}</div>` : ''}
   return page({ title: 'Campanii', body, nav: adminNav('campaigns') });
 }
 
-export function campaignDetailPage({ campaign, summary, invites, publicUrl, email, flash }) {
+export function campaignDetailPage({ campaign, summary, invites, publicUrl, email, questions = [], flash }) {
   const pending = invites.filter((i) => !i.responded_at).length;
   const rows = invites.length
     ? invites
@@ -148,6 +158,8 @@ ${flash ? `<div class="flash">${escapeHtml(flash)}</div>` : ''}
     <button class="btn ghost" type="submit">${campaign.active ? 'Închide campania' : 'Redeschide campania'}</button>
   </form>
 </div>
+
+${questionsCard(campaign, questions)}
 
 ${emailCard(campaign, email)}
 
@@ -352,10 +364,10 @@ function trendChart(trend) {
     <p class="small muted">Ultima lună: NPS ${trend.at(-1).nps ?? '&mdash;'} din ${trend.at(-1).total} răspunsuri.</p>`;
 }
 
-function breakdownTable(rows) {
+function breakdownTable(rows, label = 'Segment') {
   if (!rows.length) return '<p class="muted">Fără date.</p>';
   return `<table>
-    <thead><tr><th>Segment</th><th class="num">Răspunsuri</th><th class="num">Promotori</th><th class="num">Detractori</th><th class="num">NPS</th></tr></thead>
+    <thead><tr><th>${label}</th><th class="num">Răspunsuri</th><th class="num">Promotori</th><th class="num">Detractori</th><th class="num">NPS</th></tr></thead>
     <tbody>${rows
       .map(
         (r) => `<tr><td>${escapeHtml(r.bucket)}</td><td class="num">${r.total}</td>
@@ -393,4 +405,242 @@ function campaignSelect(campaigns, campaignId, action) {
     </select>
     <button class="btn ghost" type="submit">Aplică</button>
   </form>`;
+}
+
+/* -------------------------- intrebari, locatii, afise ------------------------- */
+
+const KIND_RO = { rating: 'Notă 1–5', choice: 'Alegere', text: 'Text liber' };
+const TOPIC_RO = { produs: 'produs', experienta: 'experiență', locatie: 'locație' };
+
+export function questionsCard(campaign, questions) {
+  const rows = questions.length
+    ? questions
+        .map(
+          (q, i) => `<tr>
+            <td>${escapeHtml(q.text)}
+              ${q.options ? `<div class="small muted">${q.options.map(escapeHtml).join(' · ')}</div>` : ''}</td>
+            <td class="small">${KIND_RO[q.kind] || q.kind}</td>
+            <td class="small">${q.topic ? escapeHtml(TOPIC_RO[q.topic] || q.topic) : '<span class="muted">—</span>'}</td>
+            <td class="small">${q.required ? 'obligatorie' : '<span class="muted">opțională</span>'}</td>
+            <td>
+              <div class="row" style="gap:4px;flex-wrap:nowrap">
+                ${i > 0 ? moveForm(q.id, 'sus', '↑') : ''}
+                ${i < questions.length - 1 ? moveForm(q.id, 'jos', '↓') : ''}
+                <form method="POST" action="/admin/intrebari/${q.id}/sterge">
+                  <button class="btn ghost small" type="submit">Șterge</button>
+                </form>
+              </div>
+            </td>
+          </tr>`,
+        )
+        .join('')
+    : '<tr><td colspan="5" class="muted">Doar întrebarea NPS și motivul scorului.</td></tr>';
+
+  return `<div class="card">
+  <h2 style="margin-top:0">Întrebări suplimentare</h2>
+  <p class="small muted">Apar în sondaj după scorul NPS. Ține-le puține: fiecare întrebare
+  în plus scade rata de răspuns.</p>
+  <table>
+    <thead><tr><th>Întrebare</th><th>Tip</th><th>Temă</th><th>Obligatorie</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  ${
+    questions.length
+      ? ''
+      : `<form method="POST" action="/admin/campanii/${campaign.id}/intrebari-standard" style="margin-top:12px">
+           <button class="btn ghost" type="submit">Adaugă setul standard (produs, experiență, locație)</button>
+         </form>`
+  }
+  <form method="POST" action="/admin/campanii/${campaign.id}/intrebari" style="margin-top:16px">
+    <label for="qtext">Întrebare nouă</label>
+    <input id="qtext" name="text" type="text" required placeholder="Cât de mulțumit ești de livrare?">
+    <div class="row" style="gap:12px;align-items:flex-end">
+      <div style="flex:1 1 160px">
+        <label for="qkind">Tip</label>
+        <select id="qkind" name="kind">
+          <option value="rating">Notă 1–5</option>
+          <option value="choice">Alegere dintr-o listă</option>
+          <option value="text">Text liber</option>
+        </select>
+      </div>
+      <div style="flex:1 1 160px">
+        <label for="qtopic">Temă</label>
+        <select id="qtopic" name="topic">
+          <option value="">—</option>
+          <option value="produs">produs</option>
+          <option value="experienta">experiență</option>
+          <option value="locatie">locație</option>
+        </select>
+      </div>
+      <div style="flex:2 1 240px">
+        <label for="qoptions">Opțiuni <span class="hint">(doar pentru „alegere”, separate prin virgulă)</span></label>
+        <input id="qoptions" name="options" type="text" placeholder="Produsul, Oamenii, Prețul">
+      </div>
+    </div>
+    <label class="small" style="font-weight:500;margin-top:10px">
+      <input type="checkbox" name="required" value="1" style="width:auto"> Răspuns obligatoriu
+    </label>
+    <p style="margin-top:12px"><button class="btn" type="submit">Adaugă întrebarea</button></p>
+  </form>
+</div>`;
+}
+
+function moveForm(id, direction, label) {
+  return `<form method="POST" action="/admin/intrebari/${id}/muta">
+    <input type="hidden" name="directie" value="${direction}">
+    <button class="btn ghost small" type="submit" title="Mută ${direction}">${label}</button>
+  </form>`;
+}
+
+export function questionResultsCard(results) {
+  if (!results.length) return '';
+  const blocks = results
+    .map((q) => {
+      if (q.kind === 'text') {
+        const list = q.texts.length
+          ? q.texts
+              .map(
+                (t) => `<div style="padding:6px 0;border-bottom:1px solid var(--line)">
+                  ${escapeHtml(t.value)} <span class="small muted">${escapeHtml(t.created_at)}</span></div>`,
+              )
+              .join('')
+          : '<p class="muted small">Niciun răspuns încă.</p>';
+        return `<div style="margin-bottom:18px"><strong>${escapeHtml(q.text)}</strong>${list}</div>`;
+      }
+      const max = Math.max(...q.counts.map((c) => c.n), 1);
+      const bars = q.counts.length
+        ? q.counts
+            .map(
+              (c) => `<tr>
+                <td style="width:180px">${escapeHtml(c.value)}</td>
+                <td><div style="background:var(--accent);height:14px;border-radius:3px;width:${Math.round((c.n / max) * 100)}%;min-width:3px"></div></td>
+                <td class="num" style="width:60px">${c.n}</td>
+              </tr>`,
+            )
+            .join('')
+        : '<tr><td colspan="3" class="muted">Niciun răspuns încă.</td></tr>';
+      return `<div style="margin-bottom:18px">
+        <strong>${escapeHtml(q.text)}</strong>
+        ${q.average !== null ? `<span class="small muted"> — medie ${q.average}/5 din ${q.total} răspunsuri</span>` : ''}
+        <table style="margin-top:6px"><tbody>${bars}</tbody></table>
+      </div>`;
+    })
+    .join('');
+
+  return `<div class="card">
+    <h2 style="margin-top:0">Întrebările suplimentare</h2>
+    ${blocks}
+  </div>`;
+}
+
+export function locationsPage({ locations, campaigns, campaign, publicUrl, qrFor, flash }) {
+  const cards = locations.length
+    ? locations
+        .map((l) => {
+          const link = `${publicUrl}/s/${campaign ? campaign.slug : 'campanie'}?loc=${l.slug}`;
+          return `<div class="card">
+            <div class="row" style="gap:18px;align-items:flex-start">
+              <div style="flex:0 0 140px">${qrFor(link, 140)}</div>
+              <div style="flex:1 1 260px">
+                <h2 style="margin:0 0 4px">${escapeHtml(l.name)}</h2>
+                ${l.address ? `<p class="small muted" style="margin:0 0 8px">${escapeHtml(l.address)}</p>` : ''}
+                <p class="small" style="margin:0 0 8px">Răspunsuri primite: <strong>${l.responses}</strong></p>
+                <pre style="white-space:pre-wrap;word-break:break-all">${escapeHtml(link)}</pre>
+                <div class="row">
+                  <a class="btn ghost" href="/admin/afise?locatie=${l.id}${campaign ? `&campanie=${campaign.id}` : ''}" target="_blank" rel="noopener">Afiș de printat</a>
+                  <form method="POST" action="/admin/locatii/${l.id}/status">
+                    <input type="hidden" name="active" value="${l.active ? 0 : 1}">
+                    <button class="btn ghost" type="submit">${l.active ? 'Dezactivează' : 'Reactivează'}</button>
+                  </form>
+                  ${l.active ? '' : '<span class="tag passive">inactivă</span>'}
+                </div>
+              </div>
+            </div>
+          </div>`;
+        })
+        .join('')
+    : '<div class="card"><p class="muted">Nicio locație încă. Adaugă una mai jos și primești codul QR de printat.</p></div>';
+
+  const body = `
+<h1>Locații și coduri QR</h1>
+<p class="sub">Fiecare locație are codul ei QR. Clientul îl scanează cu telefonul, răspunde în 30 de secunde,
+iar tu vezi în dashboard care locație are problema.</p>
+${flash ? `<div class="flash">${escapeHtml(flash)}</div>` : ''}
+${campaigns.length === 0 ? '<div class="flash">Creează întâi o campanie: codul QR trimite către sondajul ei.</div>' : ''}
+${
+  campaigns.length > 1
+    ? `<form method="GET" action="/admin/locatii" class="card row">
+        <label for="campanie" style="margin:0">Codurile QR trimit către</label>
+        <select id="campanie" name="campanie" style="max-width:320px">
+          ${campaigns
+            .map((c) => `<option value="${c.id}"${campaign && campaign.id === c.id ? ' selected' : ''}>${escapeHtml(c.name)}</option>`)
+            .join('')}
+        </select>
+        <button class="btn ghost" type="submit">Schimbă</button>
+      </form>`
+    : ''
+}
+${cards}
+<div class="card">
+  <h2 style="margin-top:0">Locație nouă</h2>
+  <form method="POST" action="/admin/locatii">
+    <label for="lname">Nume</label>
+    <input id="lname" name="name" type="text" required placeholder="Magazin Unirii">
+    <label for="laddress">Adresă <span class="hint">(apare doar pe afiș)</span></label>
+    <input id="laddress" name="address" type="text" placeholder="Bd. Unirii 12, București">
+    <p style="margin-top:16px"><button class="btn" type="submit">Adaugă locația</button></p>
+  </form>
+</div>
+<p><a class="btn ghost" href="/admin/afise${campaign ? `?campanie=${campaign.id}` : ''}" target="_blank" rel="noopener">Printează toate afișele</a></p>`;
+
+  return page({ title: 'Locații și QR', body, nav: adminNav('locations') });
+}
+
+// Pagina de printat: cate un afiș A5/A4 per locație, cu QR mare si instructiuni.
+export function postersPage({ posters, campaignName }) {
+  const sheets = posters
+    .map(
+      (p) => `<section class="poster">
+        <p class="poster-kicker">${escapeHtml(campaignName)}</p>
+        <h1>Cum a fost la noi?</h1>
+        <p class="poster-lead">Scanează codul cu telefonul și spune-ne în 30 de secunde.
+        Ne ajută să reparăm exact ce nu merge.</p>
+        <div class="poster-qr">${p.qr}</div>
+        <p class="poster-place">${escapeHtml(p.name)}</p>
+        ${p.address ? `<p class="poster-address">${escapeHtml(p.address)}</p>` : ''}
+        <p class="poster-url">${escapeHtml(p.link)}</p>
+      </section>`,
+    )
+    .join('');
+
+  return `<!doctype html>
+<html lang="ro"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Afișe cu cod QR</title>
+<style>
+  body { margin: 0; background: #eef0f3; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  .bar { padding: 14px 16px; background: #fff; border-bottom: 1px solid #e4e7ec; }
+  .bar button { background: #2f5bea; color: #fff; border: 0; border-radius: 8px; padding: 10px 16px;
+    font-size: 15px; font-weight: 600; cursor: pointer; }
+  .poster { width: 210mm; min-height: 290mm; margin: 16px auto; background: #fff; box-sizing: border-box;
+    padding: 28mm 20mm; text-align: center; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; }
+  .poster-kicker { text-transform: uppercase; letter-spacing: 2px; font-size: 13px; color: #6b7280; margin: 0 0 10mm; }
+  .poster h1 { font-size: 44px; margin: 0 0 6mm; letter-spacing: -1px; }
+  .poster-lead { font-size: 19px; line-height: 1.5; color: #374151; max-width: 130mm; margin: 0 0 12mm; }
+  .poster-qr svg { width: 95mm; height: 95mm; }
+  .poster-place { font-size: 24px; font-weight: 700; margin: 10mm 0 0; }
+  .poster-address { font-size: 16px; color: #6b7280; margin: 2mm 0 0; }
+  .poster-url { font-size: 13px; color: #9aa1ac; margin: 8mm 0 0; word-break: break-all; }
+  @media print {
+    body { background: #fff; }
+    .bar { display: none; }
+    .poster { margin: 0; box-shadow: none; page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+<div class="bar"><button onclick="window.print()">Printează</button></div>
+${sheets || '<section class="poster"><h1>Nicio locație de printat</h1></section>'}
+</body></html>`;
 }

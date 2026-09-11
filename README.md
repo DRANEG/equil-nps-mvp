@@ -21,14 +21,18 @@ npm start                 # pornește pe http://localhost:3000
 - Sondaj public demo: <http://localhost:3000/s/demo-nps>
 - Administrare: <http://localhost:3000/admin> (parola = `ADMIN_TOKEN` din `.env`)
 
-Teste: `npm test` (40 de teste — calculul NPS, fluxul de răspuns, autentificare, export,
-protocolul SMTP, robotul de trimitere și dezabonarea).
+Teste: `npm test` (59 de teste — calculul NPS, fluxul de răspuns, autentificare, export,
+protocolul SMTP, robotul de trimitere, dezabonarea, întrebările proprii, locațiile,
+generatorul de coduri QR și fișierele aplicației instalabile).
 
 ## 2. Ce face
 
 | Zonă | Ce poți face |
 |------|--------------|
-| Sondaj | Pagină mobil-first, scala 0–10 + motivul scorului. Funcționează fără JavaScript. |
+| Sondaj | Pagină mobil-first, scala 0–10 + motivul scorului. Funcționează fără JavaScript și chiar fără semnal. |
+| Întrebări proprii | Pe lângă NPS: note 1–5, alegere dintr-o listă sau text liber, pe teme de produs / experiență / locație. |
+| Coduri QR | Un cod QR per locație, de lipit la casă sau pe masă. Clientul scanează și răspunde; tu vezi din ce locație vine feedbackul. |
+| Aplicație instalabilă | PWA: se instalează pe telefon (Android, iPhone) din browser, fără App Store. |
 | Campanii | Fiecare val de măsurare e o campanie (ex. „NPS trimestrial Q1”), cu întrebări proprii și link public `/s/<slug>`. |
 | Contacte | Le lipești ca text (`email, nume, companie, segment`); fiecare primește un link unic `/r/<token>`, deci știi cine a răspuns. |
 | Trimitere | Automată pe email (SMTP), cu o singură reamintire după 5 zile. Alternativ, export CSV cu linkuri pentru mail-merge. |
@@ -126,7 +130,61 @@ Ambele variante sunt sigure dacă rulează simultan: invitația se rezervă în 
 Rămâne disponibilă: **Export CSV pentru mail-merge** îți dă `email, nume, companie, segment, link`
 și trimiți din Gmail Mail Merge, Outlook sau Mailchimp cu textul tău.
 
-## 6. Structura codului
+## 6. Întrebări suplimentare, locații și coduri QR
+
+### Întrebări proprii
+
+În pagina campaniei, secțiunea **Întrebări suplimentare**. Trei tipuri:
+
+- **notă 1–5** — pentru lucruri pe care vrei să le urmărești în timp (produs, livrare, curățenie);
+- **alegere dintr-o listă** — răspunsuri comparabile („Ce ți-a plăcut cel mai mult?”);
+- **text liber** — pentru context.
+
+Butonul **„Adaugă setul standard”** îți pune dintr-un click cinci întrebări gata scrise, câte una
+pentru produs, experiență și locație. Fiecare poate fi obligatorie sau opțională și se poate reordona.
+
+Sfat practic: **maximum 3–4 întrebări în plus**. Fiecare întrebare adăugată scade rata de răspuns;
+NPS-ul plus două note și un câmp liber îți spun deja unde e problema.
+
+Rezultatele apar în dashboard, sub NPS: medie pe fiecare notă, distribuția alegerilor și ultimele
+răspunsuri libere.
+
+### Locații și coduri QR
+
+**Admin → Locații** → adaugi locația (nume + adresă) → primești pe loc codul QR.
+
+- Fiecare locație are linkul ei: `/s/<campanie>?loc=<locație>`, iar răspunsul se salvează cu locația.
+- **Afiș de printat** deschide o pagină A4 gata de tipărit: „Cum a fost la noi?”, cod QR mare,
+  numele și adresa locației. „Printează toate afișele” scoate câte o pagină per locație.
+- În dashboard apare **Defalcare pe locație**: vezi care magazin trage scorul în jos.
+
+Codurile QR sunt generate în aplicație (SVG, deci se printează la orice dimensiune fără pixeli).
+
+### Scanare fără semnal
+
+Dacă în magazin nu e semnal bun, pagina sondajului se încarcă din memoria telefonului, iar răspunsul
+se salvează local și pleacă singur când revine conexiunea. Clientul vede „răspunsul tău este salvat”,
+nu o eroare.
+
+## 7. Aplicație instalabilă pe telefon (PWA)
+
+Nu e nevoie de App Store și nici de cont de developer.
+
+**Pe Android (Chrome):** deschizi adresa aplicației → meniul ⋮ → **„Instalează aplicația”**
+(sau „Adaugă la ecranul principal”). Apare ca icoană separată, pornește pe dashboard și rulează
+pe tot ecranul, fără bara de browser.
+
+**Pe iPhone (Safari):** butonul Share → **„Add to Home Screen”**.
+
+Condiție obligatorie în producție: aplicația trebuie servită prin **HTTPS** (pe `localhost` merge
+și fără). Fără HTTPS, Chrome nu oferă instalarea.
+
+Ce am pregătit pentru asta: `public/manifest.webmanifest` (nume, culori, icoane 192/512 + maskable,
+scurtături către Dashboard / Răspunsuri / Locații) și `public/sw.js` (service worker: paginile de
+sondaj merg offline, restul arată o pagină clară „Nu ai conexiune”). Paginile de administrare nu se
+păstrează în cache, ca să nu vezi date vechi.
+
+## 8. Structura codului
 
 ```
 src/
@@ -137,11 +195,17 @@ src/
   routes/public.js   sondaj, trimitere răspuns, API JSON
   routes/admin.js    dashboard, campanii, invitații, exporturi
   views/             HTML-ul (layout + CSS, sondaj, admin)
+  qr.js              generator de coduri QR (SVG), scris de la zero
   mailer.js          client SMTP propriu (fara dependente) + modul .eml pentru probe
   emails.js          șabloanele de invitație și de reamintire
   scheduler.js       robotul: ce se trimite, când și cu ce protecții
   send.js            o singură trecere de trimitere, pentru cron
   seed.js            date demo
+public/
+  manifest.webmanifest  aplicatia instalabila (PWA)
+  sw.js                 service worker: offline si cache
+  sondaj.js             trimitere fara semnal, cu coada locala
+  icons/                icoanele aplicatiei
 test/                teste pentru calcul și pentru fluxul complet
 data/nps.db          baza de date (nu se urcă în git)
 ```
@@ -156,24 +220,31 @@ Rute principale:
 | POST | `/api/raspunsuri` | același lucru, JSON: `{ "slug": "...", "score": 9, "comment": "..." }` |
 | GET | `/admin` | dashboard (necesită autentificare) |
 | GET | `/admin/raspunsuri.csv` | export răspunsuri |
+| GET | `/s/:slug?loc=<locație>` | sondaj deschis prin scanarea unui cod QR |
+| GET | `/admin/locatii` | locații + coduri QR |
+| GET | `/admin/afise` | afișele de printat (A4, un cod QR per locație) |
+| GET | `/manifest.webmanifest`, `/sw.js` | fișierele aplicației instalabile |
 | GET | `/dezabonare/:token` | pagina de dezabonare (confirmare) |
 | POST | `/dezabonare/:token` | dezabonarea propriu-zisă (și butonul din Gmail) |
 | GET | `/healthz` | verificare de sănătate pentru hosting |
 
-## 7. Punere în producție
+## 9. Punere în producție
 
 - Setează `ADMIN_TOKEN` (parolă lungă) și `PUBLIC_URL` (domeniul real, cu `https://`).
 - Rulează în spatele unui reverse proxy cu TLS (Caddy, Nginx) — cookie-ul de admin e
-  `HttpOnly` + `SameSite=Lax`, dar parola circulă doar criptat dacă ai HTTPS.
+  `HttpOnly` + `SameSite=Lax`, dar parola circulă doar criptat dacă ai HTTPS. HTTPS este și
+  condiția ca aplicația să poată fi instalată pe telefon.
 - Backup = copierea fișierului `data/nps.db` (oprește serverul sau folosește
   `sqlite3 data/nps.db ".backup backup.db"`).
 - Serviciu systemd / container: comanda e `node src/server.js`, nimic de compilat.
 
-## 8. Limite cunoscute (conștiente, pentru un MVP)
+## 10. Limite cunoscute (conștiente, pentru un MVP)
 
 - O singură parolă de admin, fără conturi per utilizator.
-- Fără aplicație nativă de mobil: sondajul e o pagină web responsive, deschisă din
-  linkul primit pe email (pentru NPS asta e și varianta cu rata cea mai bună de răspuns).
+- Fără aplicație nativă în App Store / Google Play: aplicația se instalează ca PWA, direct din
+  browser. Pentru NPS asta e și varianta cu rata cea mai bună de răspuns.
+- Codurile QR folosesc corecție de erori nivel M (suportă ~15% deteriorare). Dacă afișul stă
+  în locuri unde se murdărește sau se zgârie, printează-l mai mare.
 - O singură reamintire per invitație; nu există secvențe de mai multe mesaje.
 - Fără grafic interactiv (dashboardul desenează bare simple în HTML/CSS).
 - Fără multi-tenant: o instalare = o organizație.

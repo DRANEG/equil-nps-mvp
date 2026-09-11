@@ -1,7 +1,10 @@
 import { html, json, redirect, readForm, escapeHtml } from '../http.js';
-import { surveyPage, thanksPage, noticePage } from '../views/survey.js';
+import { surveyPage, thanksPage, noticePage, offlinePage } from '../views/survey.js';
 import { categorize, isValidScore } from '../nps.js';
-import { getCampaignBySlug, getInviteByToken, saveResponse, unsubscribeByToken } from '../db.js';
+import {
+  getCampaignBySlug, getInviteByToken, saveResponse, unsubscribeByToken,
+  listQuestions, saveAnswers, getLocationBySlug, getCampaign,
+} from '../db.js';
 import { page as pageShell } from '../views/layout.js';
 
 // GET /s/:slug — sondaj public, anonim.
@@ -14,7 +17,17 @@ export function surveyBySlug(req, res, { db, params, url }) {
     return html(res, 410, noticePage('Sondaj închis', 'Această campanie nu mai primește răspunsuri.'));
   }
   const preselected = url.searchParams.get('scor');
-  return html(res, 200, surveyPage({ campaign, slug: campaign.slug, preselected }));
+  return html(
+    res,
+    200,
+    surveyPage({
+      campaign,
+      slug: campaign.slug,
+      preselected,
+      questions: listQuestions(db, campaign.id),
+      location: resolveLocation(db, url.searchParams.get('loc')),
+    }),
+  );
 }
 
 // GET /r/:token — sondaj personalizat; ?scor=9 vine din butoanele puse direct in email.
@@ -40,6 +53,8 @@ export function surveyByToken(req, res, { db, params, url }) {
       token: invite.token,
       preselected: url.searchParams.get('scor'),
       greeting,
+      questions: listQuestions(db, invite.campaign_id),
+      location: resolveLocation(db, url.searchParams.get('loc')),
     }),
   );
 }
@@ -69,7 +84,18 @@ export async function submitResponseApi(req, res, { db }) {
 
 export function thanks(req, res, { url }) {
   const score = url.searchParams.get('scor');
-  return html(res, 200, thanksPage({ score: isValidScore(score) ? score : null }));
+  return html(
+    res,
+    200,
+    thanksPage({
+      score: isValidScore(score) ? score : null,
+      offline: url.searchParams.get('offline') === '1',
+    }),
+  );
+}
+
+export function offline(req, res) {
+  return html(res, 200, offlinePage());
 }
 
 // Logica partajata de formular si API.
@@ -78,6 +104,8 @@ function record(db, form) {
   if (!isValidScore(score)) return { error: 'Scorul trebuie să fie un număr întreg între 0 și 10.' };
   const comment = typeof form.comment === 'string' ? form.comment.trim().slice(0, 2000) : null;
   const category = categorize(score);
+
+  const location = resolveLocation(db, form.loc);
 
   if (form.token) {
     const invite = getInviteByToken(db, form.token);
@@ -91,7 +119,9 @@ function record(db, form) {
       category,
       comment,
       source: 'invitatie',
+      locationId: location ? location.id : null,
     });
+    storeAnswers(db, invite.campaign_id, response.id, form);
     return { response };
   }
 
@@ -103,9 +133,31 @@ function record(db, form) {
     score,
     category,
     comment,
-    source: 'link-public',
+    source: location ? 'qr' : 'link-public',
+    locationId: location ? location.id : null,
   });
+  storeAnswers(db, campaign.id, response.id, form);
   return { response };
+}
+
+// Locatia vine din codul QR scanat (?loc=...) sau din campul ascuns al formularului.
+function resolveLocation(db, slug) {
+  if (!slug) return null;
+  const location = getLocationBySlug(db, String(slug));
+  return location && location.active ? location : null;
+}
+
+// Raspunsurile la intrebarile suplimentare vin ca q_<id> in formular sau ca
+// obiectul `answers` in API.
+function storeAnswers(db, campaignId, responseId, form) {
+  const questions = listQuestions(db, campaignId);
+  if (!questions.length) return;
+  const fromApi = form.answers && typeof form.answers === 'object' ? form.answers : {};
+  const answers = questions.map((q) => ({
+    questionId: q.id,
+    value: form[`q_${q.id}`] ?? fromApi[q.id] ?? fromApi[String(q.id)] ?? null,
+  }));
+  saveAnswers(db, responseId, answers);
 }
 
 export function home(req, res, { db, publicUrl }) {
