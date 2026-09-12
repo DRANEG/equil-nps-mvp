@@ -5,6 +5,7 @@ import {
 } from '../views/admin.js';
 import { alertConfigFromEnv, alertsDescription } from '../alerts.js';
 import { qrSvg } from '../qr.js';
+import { formatDateTime, formatPhone } from '../format.js';
 import { noticePage } from '../views/survey.js';
 import { summarize, marginOfError } from '../nps.js';
 import {
@@ -156,6 +157,7 @@ export function invitesCsv(req, res, { db, params, publicUrl }) {
     link: `${publicUrl}/r/${i.token}`,
     a_raspuns: i.responded_at ? 'da' : 'nu',
     scor: i.score ?? '',
+    trimis_la: formatDateTime(i.sent_at),
   }));
   // Exportul e folosit ca lista de trimitere, deci marcam invitatiile drept expediate.
   markInvitesSent(db, campaign.id);
@@ -182,7 +184,7 @@ export function responsesList(req, res, { db, url }) {
 export function responsesCsv(req, res, { db, url }) {
   const campaignId = intOrNull(url.searchParams.get('campanie'));
   const rows = listResponses(db, { campaignId }).map((r) => ({
-    data: r.created_at,
+    data: formatDateTime(r.created_at),
     campanie: r.campaign_name,
     scor: r.score,
     categorie: r.category,
@@ -192,7 +194,7 @@ export function responsesCsv(req, res, { db, url }) {
     segment: r.segment || '',
     comentariu: r.comment || '',
     sursa: r.source,
-    inchis_la: r.closed_at || '',
+    inchis_la: formatDateTime(r.closed_at),
   }));
   return csv(res, 'raspunsuri-nps.csv', rows);
 }

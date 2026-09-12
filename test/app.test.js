@@ -156,10 +156,14 @@ test('dashboardul afiseaza scorul si comentariile', async () => {
 
 test('exportul CSV contine antetul si raspunsurile', async () => {
   const res = await fetch(`${base}/admin/raspunsuri.csv`, { headers: authHeaders() });
-  const body = await res.text();
+  // Octetii bruti: fetch().text() ar inghiti chiar BOM-ul pe care vrem sa-l verificam.
+  const bytes = Buffer.from(await res.arrayBuffer());
   assert.equal(res.status, 200);
   assert.match(res.headers.get('content-disposition'), /raspunsuri-nps\.csv/);
-  assert.match(body.split('\n')[0], /^data,campanie,scor,categorie/);
+  assert.deepEqual([...bytes.subarray(0, 3)], [0xef, 0xbb, 0xbf], 'BOM pentru Excel romanesc');
+
+  const body = bytes.toString('utf8').replace(/^\ufeff/, '');
+  assert.match(body.split('\r\n')[0], /^data;campanie;scor;categorie/);
   assert.match(body, /ana@client\.ro/);
 });
 

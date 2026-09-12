@@ -1,6 +1,7 @@
 import { escapeHtml } from '../http.js';
 import { page, adminNav } from './layout.js';
 import { label as npsLabel } from '../nps.js';
+import { formatDateTime, formatMonth, timeAgo, formatPhone } from '../format.js';
 
 const CAT_RO = { promoter: 'Promotor', passive: 'Pasiv', detractor: 'Detractor' };
 
@@ -94,7 +95,7 @@ export function campaignsPage({ campaigns, publicUrl, flash }) {
             <td>${c.active ? '<span class="tag promoter">activă</span>' : '<span class="tag passive">închisă</span>'}</td>
             <td class="num">${c.invites}</td>
             <td class="num">${c.responses}</td>
-            <td class="small muted">${escapeHtml(c.created_at)}</td>
+            <td class="small muted">${formatDateTime(c.created_at)}</td>
           </tr>`,
         )
         .join('')
@@ -136,7 +137,7 @@ export function campaignDetailPage({ campaign, summary, invites, publicUrl, emai
             <td>${escapeHtml(i.contact_name || '')}<div class="small muted">${escapeHtml(i.email)}</div></td>
             <td class="small">${escapeHtml(i.segment || '')}</td>
             <td class="num">${i.score === null || i.score === undefined ? '<span class="muted">&mdash;</span>' : i.score}</td>
-            <td class="small">${i.responded_at ? escapeHtml(i.responded_at) : '<span class="muted">în așteptare</span>'}</td>
+            <td class="small">${i.responded_at ? formatDateTime(i.responded_at) : '<span class="muted">în așteptare</span>'}</td>
             <td class="small">${inviteEmailState(i)}</td>
             <td class="small"><code>${escapeHtml(publicUrl)}/r/${escapeHtml(i.token)}</code></td>
           </tr>`,
@@ -200,7 +201,7 @@ export function responsesPage({ responses, campaigns, campaignId, category }) {
     ? responses
         .map(
           (r) => `<tr>
-            <td class="small">${escapeHtml(r.created_at)}</td>
+            <td class="small">${formatDateTime(r.created_at)}</td>
             <td class="num"><strong>${r.score}</strong></td>
             <td><span class="tag ${r.category}">${CAT_RO[r.category]}</span></td>
             <td>${escapeHtml(r.contact_name || r.email || 'anonim')}
@@ -249,10 +250,10 @@ function inviteEmailState(invite) {
     return `<span class="tag detractor" title="${escapeHtml(invite.send_error)}">eroare</span>`;
   }
   if (invite.reminder_sent_at) {
-    return `<span class="tag promoter">reminder</span><div class="small muted">${escapeHtml(invite.reminder_sent_at)}</div>`;
+    return `<span class="tag promoter">reminder</span><div class="small muted">${formatDateTime(invite.reminder_sent_at)}</div>`;
   }
   if (invite.sent_at) {
-    return `<span class="tag passive">trimis</span><div class="small muted">${escapeHtml(invite.sent_at)}</div>`;
+    return `<span class="tag passive">trimis</span><div class="small muted">${formatDateTime(invite.sent_at)}</div>`;
   }
   return '<span class="muted">netrimis</span>';
 }
@@ -269,7 +270,7 @@ function emailCard(campaign, email) {
     ? log
         .map(
           (e) => `<tr>
-            <td class="small">${escapeHtml(e.created_at)}</td>
+            <td class="small">${formatDateTime(e.created_at)}</td>
             <td class="small">${escapeHtml(e.kind)}</td>
             <td class="small">${escapeHtml(e.recipient)}</td>
             <td class="small">${e.status === 'trimis' ? '<span class="tag promoter">trimis</span>' : `<span class="tag detractor" title="${escapeHtml(e.detail || '')}">eroare</span>`}</td>
@@ -326,7 +327,7 @@ function emailCard(campaign, email) {
 
 function closeButton(r) {
   if (r.closed_at) {
-    return `<span class="small muted" title="${escapeHtml(r.closed_at)}">rezolvat</span>`;
+    return `<span class="small muted" title="${formatDateTime(r.closed_at)}">rezolvat</span>`;
   }
   return `<form method="POST" action="/admin/raspunsuri/${r.id}/inchide">
     <button class="btn ghost small" type="submit">Închide bucla</button>
@@ -377,7 +378,7 @@ function trendChart(trend) {
     )
     .join('');
   return `<div class="spark">${bars}</div>
-    <div class="spark-labels">${trend.map((t) => `<div>${t.month.slice(5)}</div>`).join('')}</div>
+    <div class="spark-labels">${trend.map((t) => `<div>${formatMonth(t.month)}</div>`).join('')}</div>
     <p class="small muted">Ultima lună: NPS ${trend.at(-1).nps ?? '&mdash;'} din ${trend.at(-1).total} răspunsuri.</p>`;
 }
 
@@ -405,7 +406,7 @@ function recentList(recent) {
         <div class="row" style="gap:8px">
           <span class="tag ${r.category}">${r.score}</span>
           <strong>${escapeHtml(r.contact_name || r.email || 'anonim')}</strong>
-          <span class="small muted">${escapeHtml(r.created_at)}</span>
+          <span class="small muted">${formatDateTime(r.created_at)}</span>
         </div>
         <div style="margin-top:4px">${escapeHtml(r.comment)}</div>
       </div>`,
@@ -518,7 +519,7 @@ export function questionResultsCard(results) {
           ? q.texts
               .map(
                 (t) => `<div style="padding:6px 0;border-bottom:1px solid var(--line)">
-                  ${escapeHtml(t.value)} <span class="small muted">${escapeHtml(t.created_at)}</span></div>`,
+                  ${escapeHtml(t.value)} <span class="small muted">${formatDateTime(t.created_at)}</span></div>`,
               )
               .join('')
           : '<p class="muted small">Niciun răspuns încă.</p>';
@@ -678,7 +679,7 @@ export function alertsPage({ detractors, log, transport, publicUrl, campaigns })
                 ${r.company ? `<span class="small muted"> · ${escapeHtml(r.company)}</span>` : ''}
                 ${r.location_name ? `<span class="small muted"> · 📍 ${escapeHtml(r.location_name)}</span>` : ''}
               </div>
-              <span class="small muted">${escapeHtml(r.created_at)}</span>
+              <span class="small muted" title="${formatDateTime(r.created_at)}">${timeAgo(r.created_at)}</span>
             </div>
             ${
               r.comment
@@ -715,7 +716,7 @@ export function alertsPage({ detractors, log, transport, publicUrl, campaigns })
     ? log
         .map(
           (a) => `<tr>
-            <td class="small">${escapeHtml(a.created_at)}</td>
+            <td class="small">${formatDateTime(a.created_at)}</td>
             <td class="small">${escapeHtml(a.channel)}</td>
             <td class="small">${escapeHtml(a.target || '—')}</td>
             <td class="small">${

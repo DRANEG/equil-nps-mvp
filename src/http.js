@@ -32,15 +32,26 @@ export function csv(res, filename, rows) {
   });
 }
 
-export function toCsv(rows) {
-  if (!rows.length) return '';
+// Excel-ul romanesc asteapta punct-si-virgula ca separator de liste si are
+// nevoie de marcajul BOM ca sa citeasca diacriticele. Fara ele, exportul se
+// deschide intr-o singura coloana, cu "Ã¢" in loc de "â".
+export const CSV_BOM = '\uFEFF';
+
+export function toCsv(rows, { separator = process.env.CSV_SEPARATOR || ';', bom = true } = {}) {
+  if (!rows.length) return bom ? CSV_BOM : '';
   const cols = Object.keys(rows[0]);
+  const needsQuotes = new RegExp(`["\\n\\r${separator === '\t' ? '\\t' : separator}]`);
   const cell = (v) => {
     if (v === null || v === undefined) return '';
     const s = String(v);
-    return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    return needsQuotes.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  return [cols.join(','), ...rows.map((r) => cols.map((c) => cell(r[c])).join(','))].join('\n');
+  const lines = [
+    cols.join(separator),
+    ...rows.map((r) => cols.map((c) => cell(r[c])).join(separator)),
+  ];
+  // Sfarsit de linie CRLF: asa se asteapta Excel pe Windows.
+  return (bom ? CSV_BOM : '') + lines.join('\r\n') + '\r\n';
 }
 
 // Corpul unei cereri, limitat ca marime pentru a nu tine memoria ocupata.
