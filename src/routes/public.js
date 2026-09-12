@@ -3,6 +3,7 @@ import { surveyPage, thanksPage, noticePage, offlinePage } from '../views/survey
 import { categorize, isValidScore } from '../nps.js';
 import { alertInBackground } from '../alerts.js';
 import { privacyPage } from '../views/gdpr.js';
+import { createLimiter, clientIp } from '../limiter.js';
 import { operatorFromEnv, anonymizeContact } from '../gdpr.js';
 import {
   getCampaignBySlug, getInviteByToken, saveResponse, unsubscribeByToken,
@@ -65,6 +66,15 @@ export function surveyByToken(req, res, { db, params, url }) {
 // POST /raspunde — trimiterea formularului (token sau slug).
 export async function submitResponse(req, res, ctx) {
   const { db } = ctx;
+  const limita = checkSubmitLimit(req);
+  if (!limita.ok) {
+    return html(
+      res,
+      429,
+      noticePage('Prea multe răspunsuri', 'Am primit deja mai multe răspunsuri de aici. Încearcă peste un minut.'),
+      { 'Retry-After': String(limita.retryAfterSec) },
+    );
+  }
   const form = await readForm(req);
   const result = record(db, form, ctx);
   if (result.error) {
@@ -76,6 +86,12 @@ export async function submitResponse(req, res, ctx) {
 // POST /api/raspunsuri — acelasi lucru, pentru integrari (widget, app mobil).
 export async function submitResponseApi(req, res, ctx) {
   const { db } = ctx;
+  const limita = checkSubmitLimit(req);
+  if (!limita.ok) {
+    return json(res, 429, { ok: false, error: 'Prea multe răspunsuri într-un timp scurt.' }, {
+      'Retry-After': String(limita.retryAfterSec),
+    });
+  }
   const form = await readForm(req);
   const result = record(db, form, ctx);
   if (result.error) return json(res, 400, { ok: false, error: result.error });
@@ -123,6 +139,23 @@ export function eraseMyData(req, res, { db, params }) {
 
 export function offline(req, res) {
   return html(res, 200, offlinePage());
+}
+
+// Anti-spam pentru codurile QR: cineva cu telefonul in mana nu poate trimite
+// zece raspunsuri pe minut. Limita e larga intentionat -- intr-un magazin, toti
+// clientii pot iesi la internet prin acelasi IP (wifi-ul de la casa).
+const submitLimiter = createLimiter({
+  max: Number(process.env.SUBMIT_MAX_PER_MINUTE) || 10,
+  windowMs: 60_000,
+  name: 'raspunsuri',
+});
+
+export function checkSubmitLimit(req) {
+  return submitLimiter.hit(clientIp(req));
+}
+
+export function resetSubmitLimit() {
+  submitLimiter.reset();
 }
 
 // Logica partajata de formular si API.

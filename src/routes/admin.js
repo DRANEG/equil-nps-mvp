@@ -11,6 +11,7 @@ import { alertConfigFromEnv, alertsDescription } from '../alerts.js';
 import { qrSvg } from '../qr.js';
 import { formatDateTime, formatPhone, normalizePhone } from '../format.js';
 import { describeWindow } from '../calendar.js';
+import { createLimiter, clientIp } from '../limiter.js';
 import { noticePage } from '../views/survey.js';
 import { summarize, marginOfError } from '../nps.js';
 import {
@@ -27,21 +28,47 @@ import { runSendPass } from '../scheduler.js';
 
 const COOKIE = 'equil_nps_admin';
 
+// Cinci incercari gresite la 15 minute, pe IP: suficient pentru cineva care a
+// uitat parola, inutil pentru cineva care incearca dictionare.
+const loginLimiter = createLimiter({ max: 5, windowMs: 15 * 60_000, name: 'autentificare' });
+
+// Sterge pedeapsa pentru un IP (sau pentru toate, daca nu dai niciunul).
+export function resetLoginLimit(ip) {
+  loginLimiter.reset(ip);
+}
+
 export function isAuthenticated(req, adminToken) {
   const cookie = parseCookies(req)[COOKIE];
   return Boolean(cookie) && safeEqual(cookie, sessionValue(adminToken));
 }
 
 export function loginForm(req, res, { url }) {
-  return html(res, 200, loginPage(url.searchParams.get('eroare') ? 'Parolă incorectă.' : null));
+  const eroare = url.searchParams.get('eroare');
+  const mesaj =
+    eroare === 'prea-multe'
+      ? 'Prea multe încercări greșite. Mai așteaptă câteva minute.'
+      : eroare
+        ? 'Parolă incorectă.'
+        : null;
+  return html(res, 200, loginPage(mesaj));
 }
 
-export async function login(req, res, { adminToken }) {
+export async function login(req, res, { adminToken, publicUrl }) {
+  const ip = clientIp(req);
+  if (!loginLimiter.check(ip).ok) {
+    return redirect(res, '/admin/login?eroare=prea-multe');
+  }
+
   const form = await readForm(req);
   if (!form.token || !safeEqual(form.token, adminToken)) {
-    return redirect(res, '/admin/login?eroare=1');
+    const stare = loginLimiter.hit(ip);
+    return redirect(res, `/admin/login?eroare=${stare.ok ? '1' : 'prea-multe'}`);
   }
-  const cookie = `${COOKIE}=${sessionValue(adminToken)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=86400`;
+
+  loginLimiter.reset(ip);
+  // Secure doar pe HTTPS: pe http://localhost browserul ar refuza cookie-ul.
+  const secure = String(publicUrl || '').startsWith('https://') ? '; Secure' : '';
+  const cookie = `${COOKIE}=${sessionValue(adminToken)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=86400${secure}`;
   return redirect(res, '/admin', { 'Set-Cookie': cookie });
 }
 
