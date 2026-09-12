@@ -5,7 +5,8 @@ import {
 } from '../views/admin.js';
 import { alertConfigFromEnv, alertsDescription } from '../alerts.js';
 import { qrSvg } from '../qr.js';
-import { formatDateTime, formatPhone } from '../format.js';
+import { formatDateTime, formatPhone, normalizePhone } from '../format.js';
+import { describeWindow } from '../calendar.js';
 import { noticePage } from '../views/survey.js';
 import { summarize, marginOfError } from '../nps.js';
 import {
@@ -120,6 +121,7 @@ export function campaignDetail(req, res, { db, params, url, publicUrl, mailer })
         log: listEmailLog(db, { campaignId: campaign.id, limit: 8 }),
         transport: mailer ? mailer.description : 'necunoscut',
         mode: mailer ? mailer.mode : 'dry',
+        program: describeWindow(),
         reminderDays: Number(process.env.REMINDER_DAYS) || 5,
         delayMinutes: process.env.SEND_DELAY_MINUTES === undefined ? 10 : Number(process.env.SEND_DELAY_MINUTES),
       },
@@ -152,6 +154,7 @@ export function invitesCsv(req, res, { db, params, publicUrl }) {
   const rows = listInvites(db, campaign.id).map((i) => ({
     email: i.email,
     nume: i.contact_name || '',
+    telefon: formatPhone(i.phone),
     companie: i.company || '',
     segment: i.segment || '',
     link: `${publicUrl}/r/${i.token}`,
@@ -190,6 +193,7 @@ export function responsesCsv(req, res, { db, url }) {
     categorie: r.category,
     email: r.email || '',
     nume: r.contact_name || '',
+    telefon: formatPhone(r.phone),
     companie: r.company || '',
     segment: r.segment || '',
     comentariu: r.comment || '',
@@ -207,19 +211,21 @@ export async function responseClose(req, res, { db, params }) {
 
 /* ---------------------------------- utilitare -------------------------------- */
 
-// "email, nume, companie, segment" pe linie; accepta si virgula sau punct-si-virgula.
+// "email, nume, companie, segment, telefon" pe linie; accepta si virgula sau
+// punct-si-virgula ca separator (cum copiaza lumea din Excel).
 export function parseContacts(text) {
   const out = [];
   for (const line of text.split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed) continue;
-    const [email, name, company, segment] = trimmed.split(/\s*[;,]\s*/);
+    const [email, name, company, segment, phone] = trimmed.split(/\s*[;,]\s*/);
     if (!email || !email.includes('@')) continue;
     out.push({
       email: email.toLowerCase(),
       name: name || null,
       company: company || null,
       segment: segment || null,
+      phone: normalizePhone(phone),
     });
   }
   return out;

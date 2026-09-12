@@ -181,10 +181,11 @@ test('adaugarea contactelor genereaza linkuri unice', async () => {
   assert.ok(row.token.length > 10);
 });
 
-test('parseContacts ignora liniile fara email', () => {
-  const parsed = parseContacts('a@b.ro, Ana, Firma, IMM\n\nfara-email\nc@d.ro');
-  assert.equal(parsed.length, 2);
-  assert.deepEqual(parsed[0], { email: 'a@b.ro', name: 'Ana', company: 'Firma', segment: 'IMM' });
+test('parseContacts ignora liniile fara email si normalizeaza telefonul', () => {
+  const parsed = parseContacts('a@b.ro, Ana, Firma, IMM\n\nfara-email\nc@d.ro\nd@e.ro, Dan, Firma SRL, IMM, 0721 234 567');
+  assert.equal(parsed.length, 3);
+  assert.equal(parsed[2].phone, '+40721234567');
+  assert.deepEqual(parsed[0], { email: 'a@b.ro', name: 'Ana', company: 'Firma', segment: 'IMM', phone: null });
   assert.equal(parsed[1].email, 'c@d.ro');
 });
 

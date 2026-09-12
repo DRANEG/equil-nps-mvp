@@ -1,6 +1,7 @@
 // Sabloanele de email. HTML-ul e pe tabele, cu stiluri inline: asa arata corect
 // si in Outlook, si in Gmail. Butoanele 0-10 duc direct in sondaj cu scorul bifat.
 import { escapeHtml } from './http.js';
+import { formatPhone, formatDateTime } from './format.js';
 
 export function brandName(env = process.env) {
   return env.MAIL_BRAND || 'Equil';
@@ -143,14 +144,16 @@ function shell({ brand, salut, intro, question, link, unsubscribe, cta, footerNo
 export function detractorAlertEmail({ response, publicUrl, brand = brandName() }) {
   const cine = response.contact_name || response.email || 'Client anonim';
   const unde = response.location_name ? ` · ${response.location_name}` : '';
+  const telefon = formatPhone(response.phone);
   const detalii = [
     ['Scor', `${response.score}/10`],
     ['Client', cine],
+    ['Telefon', telefon || '—'],
     ['Email', response.email || '—'],
     ['Companie', response.company || '—'],
     ['Locație', response.location_name || '—'],
     ['Campanie', response.campaign_name],
-    ['Data', response.created_at],
+    ['Data', formatDateTime(response.created_at)],
   ];
 
   const raspunsuri = (response.answers || []).filter((a) => a.value);
@@ -200,6 +203,13 @@ export function detractorAlertEmail({ response, publicUrl, brand = brandName() }
     </table></td></tr>
   <tr><td style="padding:18px 24px 24px">
     ${
+      telefon
+        ? `<a href="tel:${escapeHtml(telefon.replace(/\s/g, ''))}"
+             style="display:inline-block;background:#17864d;color:#fff;text-decoration:none;
+             padding:11px 18px;border-radius:8px;font-weight:600;font-size:15px;margin-right:6px">📞 Sună acum</a>`
+        : ''
+    }
+    ${
       mailto
         ? `<a href="${mailto}" style="display:inline-block;background:#2f5bea;color:#fff;text-decoration:none;
              padding:11px 18px;border-radius:8px;font-weight:600;font-size:15px">Răspunde clientului</a>`
@@ -216,6 +226,7 @@ export function detractorAlertEmail({ response, publicUrl, brand = brandName() }
   const text = [
     `DETRACTOR — scor ${response.score}/10`,
     `${cine}${unde}`,
+    telefon ? `Telefon: ${telefon}` : '',
     '',
     response.comment ? `„${response.comment}”` : '(fără comentariu)',
     '',

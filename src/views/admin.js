@@ -134,7 +134,8 @@ export function campaignDetailPage({ campaign, summary, invites, publicUrl, emai
     ? invites
         .map(
           (i) => `<tr>
-            <td>${escapeHtml(i.contact_name || '')}<div class="small muted">${escapeHtml(i.email)}</div></td>
+            <td>${escapeHtml(i.contact_name || '')}<div class="small muted">${escapeHtml(i.email)}</div>
+              ${i.phone ? `<div class="small muted">${escapeHtml(formatPhone(i.phone))}</div>` : ''}</td>
             <td class="small">${escapeHtml(i.segment || '')}</td>
             <td class="num">${i.score === null || i.score === undefined ? '<span class="muted">&mdash;</span>' : i.score}</td>
             <td class="small">${i.responded_at ? formatDateTime(i.responded_at) : '<span class="muted">în așteptare</span>'}</td>
@@ -172,11 +173,13 @@ ${emailCard(campaign, email)}
 
 <div class="card">
   <h2 style="margin-top:0">Adaugă contacte</h2>
-  <p class="small muted">Câte un contact pe linie, format: <code>email, nume, companie, segment</code>
-  (doar emailul este obligatoriu). Fiecare contact primește un link unic, ca să știi cine a răspuns.</p>
+  <p class="small muted">Câte un contact pe linie, format:
+  <code>email, nume, companie, segment, telefon</code> (doar emailul este obligatoriu).
+  Telefonul se normalizează singur (0721… devine +40721…) și îți dă butoane de apel și WhatsApp
+  când clientul e nemulțumit. Fiecare contact primește un link unic, ca să știi cine a răspuns.</p>
   <form method="POST" action="/admin/campanii/${campaign.id}/invitatii">
-    <textarea name="contacts" rows="6" placeholder="ana@client.ro, Ana Pop, Client SRL, Enterprise
-mihai@client.ro, Mihai Ionescu, Alt Client SRL, IMM"></textarea>
+    <textarea name="contacts" rows="6" placeholder="ana@client.ro, Ana Pop, Client SRL, Enterprise, 0721 234 567
+mihai@client.ro, Mihai Ionescu, Alt Client SRL, IMM, 0755 111 222"></textarea>
     <p style="margin-top:16px"><button class="btn" type="submit">Generează linkuri</button></p>
   </form>
 </div>
@@ -205,7 +208,8 @@ export function responsesPage({ responses, campaigns, campaignId, category }) {
             <td class="num"><strong>${r.score}</strong></td>
             <td><span class="tag ${r.category}">${CAT_RO[r.category]}</span></td>
             <td>${escapeHtml(r.contact_name || r.email || 'anonim')}
-              ${r.company ? `<div class="small muted">${escapeHtml(r.company)}</div>` : ''}</td>
+              ${r.company ? `<div class="small muted">${escapeHtml(r.company)}</div>` : ''}
+              ${r.phone ? `<div class="small muted">${escapeHtml(formatPhone(r.phone))}</div>` : ''}</td>
             <td class="small">${escapeHtml(r.campaign_name)}</td>
             <td>${r.comment ? escapeHtml(r.comment) : '<span class="muted">&mdash;</span>'}</td>
             <td>${closeButton(r)}</td>
@@ -292,6 +296,8 @@ function emailCard(campaign, email) {
   <p class="small muted">
     Robotul trimite invitațiile la ${delayMinutes} minute după import (ca să ai timp să corectezi lista)
     și o singură reamintire după ${reminderDays} zile, doar celor care nu au răspuns.
+    Trimite doar în programul ${escapeHtml(email.program || '9:00–20:00, fără weekend, fără sărbători legale')},
+    pe ora României. Butonul de mai jos ignoră programul.
   </p>
   <div class="row">
     <form method="POST" action="/admin/campanii/${campaign.id}/trimite">
@@ -665,6 +671,31 @@ ${sheets || '<section class="poster"><h1>Nicio locație de printat</h1></section
 
 /* ---------------------------- alerte la detractori ---------------------------- */
 
+// In Romania bucla se inchide cel mai des la telefon, nu pe email: punem intai
+// butonul de apel si pe cel de WhatsApp, care merg dintr-un singur tap de pe mobil.
+function contactButtons(r) {
+  const telefon = formatPhone(r.phone);
+  const digits = telefon.replace(/[^0-9]/g, '');
+  const mesaj = encodeURIComponent(
+    `Bună ziua! Vă scriem de la ${r.campaign_name ? r.campaign_name.replace(/\s*\(demo\)$/, '') : 'noi'} ` +
+      'în legătură cu feedbackul pe care ni l-ați lăsat. Ne puteți spune mai multe, ca să reparăm?',
+  );
+  const butoane = [];
+  if (digits) {
+    butoane.push(`<a class="btn" href="tel:${escapeHtml(telefon.replace(/\s/g, ''))}">📞 Sună ${escapeHtml(telefon)}</a>`);
+    butoane.push(`<a class="btn ghost" href="https://wa.me/${digits}?text=${mesaj}" target="_blank" rel="noopener">WhatsApp</a>`);
+  }
+  if (r.email) {
+    butoane.push(
+      `<a class="btn${digits ? ' ghost' : ''}" href="mailto:${escapeHtml(r.email)}?subject=${encodeURIComponent('Despre feedbackul tău')}">Răspunde pe email</a>`,
+    );
+  }
+  if (!butoane.length) {
+    butoane.push('<span class="small muted">Răspuns anonim — nu avem pe cine contacta.</span>');
+  }
+  return butoane.join('\n              ');
+}
+
 export function alertsPage({ detractors, log, transport, publicUrl, campaigns }) {
   const carduri = detractors.length
     ? detractors
@@ -695,11 +726,7 @@ export function alertsPage({ detractors, log, transport, publicUrl, campaigns })
                 : ''
             }
             <div class="row" style="margin-top:12px">
-              ${
-                r.email
-                  ? `<a class="btn" href="mailto:${escapeHtml(r.email)}?subject=${encodeURIComponent('Despre feedbackul tău')}">Răspunde pe email</a>`
-                  : ''
-              }
+              ${contactButtons(r)}
               <form method="POST" action="/admin/raspunsuri/${r.id}/inchide">
                 <input type="hidden" name="de" value="alerte">
                 <button class="btn ghost" type="submit">Am rezolvat, închide bucla</button>

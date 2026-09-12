@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { randomBytes } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
+import { normalizePhone } from './format.js';
 import { dirname, resolve } from 'node:path';
 
 const SCHEMA = `
@@ -125,6 +126,7 @@ const MIGRATIONS = [
   ['responses', 'location_id', 'INTEGER REFERENCES locations(id) ON DELETE SET NULL'],
   ['responses', 'alerted_at', 'TEXT'],
   ['campaigns', 'alert_detractors', 'INTEGER NOT NULL DEFAULT 1'],
+  ['contacts', 'phone', 'TEXT'],
 ];
 
 export function openDb(file = process.env.NPS_DB || './data/nps.db') {
@@ -209,15 +211,16 @@ export function setCampaignAlerts(db, id, alerts) {
 
 /* ---------------------------------- contacte --------------------------------- */
 
-export function upsertContact(db, { email, name, company, segment }) {
+export function upsertContact(db, { email, name, company, segment, phone = null }) {
   const clean = String(email).trim().toLowerCase();
   db.prepare(
-    `INSERT INTO contacts (email, name, company, segment) VALUES (?, ?, ?, ?)
+    `INSERT INTO contacts (email, name, company, segment, phone) VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(email) DO UPDATE SET
        name    = COALESCE(NULLIF(excluded.name, ''), contacts.name),
        company = COALESCE(NULLIF(excluded.company, ''), contacts.company),
-       segment = COALESCE(NULLIF(excluded.segment, ''), contacts.segment)`,
-  ).run(clean, name || null, company || null, segment || null);
+       segment = COALESCE(NULLIF(excluded.segment, ''), contacts.segment),
+       phone   = COALESCE(NULLIF(excluded.phone, ''), contacts.phone)`,
+  ).run(clean, name || null, company || null, segment || null, normalizePhone(phone));
   return db.prepare('SELECT * FROM contacts WHERE email = ?').get(clean);
 }
 
@@ -238,7 +241,7 @@ export function createInvite(db, campaignId, contactId) {
 export function getInviteByToken(db, token) {
   return db
     .prepare(
-      `SELECT i.*, c.email, c.name AS contact_name, c.company, c.segment,
+      `SELECT i.*, c.email, c.name AS contact_name, c.company, c.segment, c.phone,
               ca.slug, ca.name AS campaign_name, ca.question, ca.followup, ca.active
        FROM invites i
        JOIN contacts c  ON c.id  = i.contact_id
@@ -251,7 +254,7 @@ export function getInviteByToken(db, token) {
 export function listInvites(db, campaignId) {
   return db
     .prepare(
-      `SELECT i.*, c.email, c.name AS contact_name, c.company, c.segment,
+      `SELECT i.*, c.email, c.name AS contact_name, c.company, c.segment, c.phone,
               c.unsubscribed_at, r.score, r.comment
        FROM invites i
        JOIN contacts c ON c.id = i.contact_id
@@ -303,7 +306,7 @@ export function listResponses(db, { campaignId = null, limit = null, category = 
     where.push('r.category = ?');
     params.push(category);
   }
-  let sql = `SELECT r.*, c.email, c.name AS contact_name, c.company, c.segment,
+  let sql = `SELECT r.*, c.email, c.name AS contact_name, c.company, c.segment, c.phone,
                     ca.name AS campaign_name, ca.slug
              FROM responses r
              LEFT JOIN contacts c ON c.id = r.contact_id
@@ -380,7 +383,7 @@ export function breakdownBy(db, field, campaignId = null) {
 // lista dupa import, inainte ca robotul sa trimita ceva.
 export function pendingInvitations(db, { campaignId = null, limit = 50, delayMinutes = 0, onlyAutoSend = true } = {}) {
   const params = [];
-  let sql = `SELECT i.id, i.token, i.campaign_id, c.email, c.name AS contact_name, c.company,
+  let sql = `SELECT i.id, i.token, i.campaign_id, c.email, c.name AS contact_name, c.company, c.phone,
                     ca.name AS campaign_name, ca.question, ca.intro, ca.slug
              FROM invites i
              JOIN contacts c   ON c.id  = i.contact_id
@@ -405,7 +408,7 @@ export function pendingInvitations(db, { campaignId = null, limit = 50, delayMin
 // Invitatii trimise, fara raspuns, mai vechi de `days` zile si fara reminder.
 export function pendingReminders(db, { campaignId = null, limit = 50, days = 5, onlyAutoSend = true } = {}) {
   const params = [`-${Number(days)} days`];
-  let sql = `SELECT i.id, i.token, i.campaign_id, i.sent_at, c.email, c.name AS contact_name, c.company,
+  let sql = `SELECT i.id, i.token, i.campaign_id, i.sent_at, c.email, c.name AS contact_name, c.company, c.phone,
                     ca.name AS campaign_name, ca.question, ca.intro, ca.slug
              FROM invites i
              JOIN contacts c   ON c.id  = i.contact_id
@@ -686,7 +689,7 @@ export function questionResults(db, campaignId) {
 export function getResponseWithContext(db, id) {
   const response = db
     .prepare(
-      `SELECT r.*, c.email, c.name AS contact_name, c.company, c.segment,
+      `SELECT r.*, c.email, c.name AS contact_name, c.company, c.segment, c.phone,
               ca.name AS campaign_name, ca.slug AS campaign_slug, ca.alert_detractors,
               l.name AS location_name
        FROM responses r
@@ -742,7 +745,7 @@ export function listAlertLog(db, limit = 20) {
 // Detractorii la care nu s-a revenit inca: lista de lucru a echipei.
 export function openDetractors(db, { campaignId = null, limit = 50 } = {}) {
   const params = [];
-  let sql = `SELECT r.*, c.email, c.name AS contact_name, c.company, c.segment,
+  let sql = `SELECT r.*, c.email, c.name AS contact_name, c.company, c.segment, c.phone,
                     ca.name AS campaign_name, l.name AS location_name
              FROM responses r
              LEFT JOIN contacts c  ON c.id = r.contact_id

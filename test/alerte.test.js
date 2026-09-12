@@ -334,3 +334,36 @@ test('pagina de alerte cere autentificare', async () => {
   const res = await fetch(`${base}/admin/alerte`, { redirect: 'manual' });
   assert.equal(res.headers.get('location'), '/admin/login');
 });
+
+test('cu telefon, alerta dă buton de apel și WhatsApp', async () => {
+  const contact = upsertContact(dbHttp, {
+    email: 'ion@client.ro', name: 'Ion Popescu', phone: '0721 234 567',
+  });
+  const campanieHttp = dbHttp.prepare('SELECT id FROM campaigns LIMIT 1').get();
+  const r = saveResponse(dbHttp, {
+    campaignId: campanieHttp.id, contactId: contact.id, score: 2,
+    category: 'detractor', comment: 'Nu a venit nimeni.',
+  });
+
+  const headers = { cookie: `equil_nps_admin=${sessionValue(ADMIN_TOKEN)}` };
+  const pagina = await (await fetch(`${base}/admin/alerte`, { headers })).text();
+  assert.match(pagina, /href="tel:\+40721234567"/);
+  assert.match(pagina, /https:\/\/wa\.me\/40721234567\?text=/);
+  assert.match(pagina, /\+40 721 234 567/, 'numărul se afișează citibil');
+
+  const mesaj = detractorAlertEmail({
+    response: { ...r, contact_name: 'Ion Popescu', phone: contact.phone, campaign_name: 'X', answers: [] },
+    publicUrl: 'https://x',
+  });
+  assert.match(mesaj.html, /href="tel:\+40721234567"/);
+  assert.match(mesaj.html, /Sună acum/);
+  assert.match(mesaj.text, /Telefon: \+40 721 234 567/);
+});
+
+test('un răspuns anonim spune clar că nu ai pe cine suna', async () => {
+  const campanieHttp = dbHttp.prepare('SELECT id FROM campaigns LIMIT 1').get();
+  saveResponse(dbHttp, { campaignId: campanieHttp.id, score: 0, category: 'detractor', comment: 'Groaznic.' });
+  const headers = { cookie: `equil_nps_admin=${sessionValue(ADMIN_TOKEN)}` };
+  const pagina = await (await fetch(`${base}/admin/alerte`, { headers })).text();
+  assert.match(pagina, /Răspuns anonim — nu avem pe cine contacta/);
+});

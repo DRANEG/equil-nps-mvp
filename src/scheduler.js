@@ -6,6 +6,7 @@ import {
   claimReminder, releaseReminder, markSendError, logEmail,
 } from './db.js';
 import { invitationEmail, reminderEmail } from './emails.js';
+import { canSendNow, sendWindowFromEnv, describeWindow } from './calendar.js';
 
 export const DEFAULTS = {
   reminderDays: Number(process.env.REMINDER_DAYS) || 5,
@@ -23,9 +24,19 @@ export async function runSendPass(db, options = {}) {
     reminderDays = DEFAULTS.reminderDays, batchSize = DEFAULTS.batchSize,
     delayMinutes = DEFAULTS.delayMinutes, throttleMs = DEFAULTS.throttleMs,
     maxConsecutiveErrors = DEFAULTS.maxConsecutiveErrors,
+    // Programul de trimitere: robotul il respecta, butonul manual nu.
+    sendWindow = null, now = new Date(),
   } = options;
 
   const result = { invitatii: 0, remindere: 0, erori: 0, oprit: null };
+
+  if (sendWindow) {
+    const verificare = canSendNow(now, sendWindow);
+    if (!verificare.ok) {
+      result.oprit = `în afara programului de trimitere (${verificare.motiv})`;
+      return result;
+    }
+  }
   let consecutiveErrors = 0;
 
   const batches = [
@@ -89,13 +100,15 @@ export async function runSendPass(db, options = {}) {
 
 export function startScheduler(db, options = {}) {
   const intervalMinutes = options.intervalMinutes ?? DEFAULTS.intervalMinutes;
+  const sendWindow = options.sendWindow ?? sendWindowFromEnv();
+  console.log(`Program de trimitere: ${describeWindow(sendWindow)} (ora României)`);
   let running = false;
 
   const tick = async () => {
     if (running) return;
     running = true;
     try {
-      const result = await runSendPass(db, options);
+      const result = await runSendPass(db, { ...options, sendWindow });
       if (result.invitatii || result.remindere || result.erori) {
         console.log(
           `[email] invitatii: ${result.invitatii}, remindere: ${result.remindere}, erori: ${result.erori}` +
