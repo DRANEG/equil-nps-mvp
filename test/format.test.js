@@ -76,3 +76,19 @@ test('exportul CSV e gata pentru Excel românesc', async () => {
   assert.equal(csv.endsWith('\r\n'), true);
   assert.equal(toCsv([]), '﻿');
 });
+
+test('invitația la recenzie apare pe pagina de mulțumire, pentru toată lumea', async () => {
+  const { thanksPage } = await import('../src/views/survey.js');
+  const cu = thanksPage({ score: '3', reviewUrl: 'https://g.page/r/exemplu', reviewLabel: 'Recenzie Google' });
+  assert.match(cu, /https:\/\/g\.page\/r\/exemplu/);
+  assert.match(cu, /Recenzie Google/);
+
+  const alPromotorului = thanksPage({ score: '10', reviewUrl: 'https://g.page/r/exemplu' });
+  assert.match(alPromotorului, /https:\/\/g\.page\/r\/exemplu/, 'același link, indiferent de notă');
+
+  const fara = thanksPage({ score: '9' });
+  assert.ok(!fara.includes('recenzie publică'));
+
+  const offline = thanksPage({ score: '9', offline: true, reviewUrl: 'https://g.page/r/exemplu' });
+  assert.ok(!offline.includes('g.page'), 'fără semnal nu are rost să trimitem pe Google');
+});

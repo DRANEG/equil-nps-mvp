@@ -21,9 +21,10 @@ npm start                 # pornește pe http://localhost:3000
 - Sondaj public demo: <http://localhost:3000/s/demo-nps>
 - Administrare: <http://localhost:3000/admin> (parola = `ADMIN_TOKEN` din `.env`)
 
-Teste: `npm test` (76 de teste — calculul NPS, fluxul de răspuns, autentificare, export,
+Teste: `npm test` (112 teste — calculul NPS, fluxul de răspuns, autentificare, export,
 protocolul SMTP, robotul de trimitere, dezabonarea, întrebările proprii, locațiile,
-generatorul de coduri QR, fișierele aplicației instalabile și alertele la detractori).
+generatorul de coduri QR, aplicația instalabilă, alertele la detractori, formatele românești,
+sărbătorile legale, obligațiile GDPR și protecțiile de securitate).
 
 ## 2. Ce face
 
@@ -33,6 +34,7 @@ generatorul de coduri QR, fișierele aplicației instalabile și alertele la det
 | Întrebări proprii | Pe lângă NPS: note 1–5, alegere dintr-o listă sau text liber, pe teme de produs / experiență / locație. |
 | Coduri QR | Un cod QR per locație, de lipit la casă sau pe masă. Clientul scanează și răspunde; tu vezi din ce locație vine feedbackul. |
 | Aplicație instalabilă | PWA: se instalează pe telefon (Android, iPhone) din browser, fără App Store. |
+| Adaptat pentru România | Ora și datele locale, CSV pentru Excel românesc, buton de apel și WhatsApp, fără trimiteri în weekend sau de sărbători legale, GDPR. |
 | Campanii | Fiecare val de măsurare e o campanie (ex. „NPS trimestrial Q1”), cu întrebări proprii și link public `/s/<slug>`. |
 | Contacte | Le lipești ca text (`email, nume, companie, segment`); fiecare primește un link unic `/r/<token>`, deci știi cine a răspuns. |
 | Trimitere | Automată pe email (SMTP), cu o singură reamintire după 5 zile. Alternativ, export CSV cu linkuri pentru mail-merge. |
@@ -42,7 +44,56 @@ generatorul de coduri QR, fișierele aplicației instalabile și alertele la det
 | Alerte | Orice scor 0–6 declanșează imediat un email către echipă și un webhook (Slack/Telegram), plus o listă de lucru cu detractorii deschiși. |
 | API | `POST /api/raspunsuri` cu JSON, pentru widget în aplicație sau integrare cu alt sistem. |
 
-## 3. Cum se calculează scorul
+## 3. Adaptări pentru afaceri din România
+
+### Ora, datele și Excel
+
+- Datele se păstrează în UTC, dar **se afișează pe ora României** (`Europe/Bucharest`), în format
+  `12.09.2026, 08:30`. În lista de alerte vezi și „acum 12 minute”, cu formele corecte de plural.
+- **Exportul CSV se deschide direct în Excel românesc**: are BOM (ca să nu se strice diacriticele),
+  separator `;` (separatorul de listă din setările românești) și sfârșit de linie CRLF.
+  Dacă folosești un Excel cu setări englezești, schimbă `CSV_SEPARATOR=,`.
+
+### Telefon și WhatsApp
+
+Bucla se închide mai des la telefon decât pe email. Contactele au un câmp de telefon
+(al cincilea din import), normalizat automat: `0721 234 567`, `0040721234567` sau `+40 721 234 567`
+ajung toate la `+40721234567`. În pagina de alerte și în emailul de alertă apar butoanele
+**📞 Sună** și **WhatsApp** (cu mesaj pregătit) — un tap de pe telefon și vorbești cu clientul.
+
+### Când NU trimite emailuri
+
+Robotul trimite doar **între 9:00 și 20:00, în zile lucrătoare**, și sare peste **sărbătorile legale
+românești**: Anul Nou, Boboteaza, Sfântul Ion, 24 Ianuarie, Vinerea Mare, Paștele, 1 Mai,
+1 Iunie, Rusaliile, Adormirea Maicii Domnului, Sfântul Andrei, 1 Decembrie și Crăciunul.
+Sărbătorile mobile sunt calculate din **Paștele ortodox**, nu dintr-o listă care expiră.
+
+Se reglează din `SEND_HOURS`, `SEND_SKIP_WEEKENDS`, `SEND_SKIP_HOLIDAYS`. Butonul „Trimite acum”
+din interfață ignoră programul — e decizia ta.
+
+### GDPR (obligatoriu, nu opțional)
+
+- **Notă de informare** la `/confidentialitate`, completată cu datele firmei din `.env`
+  (`OPERATOR_NAME`, `OPERATOR_CUI`, `OPERATOR_ADDRESS`, `OPERATOR_EMAIL`): cine ești, ce date
+  colectezi, temeiul (interes legitim față de clienții existenți), cât le păstrezi, drepturile
+  persoanei și adresa ANSPDCP. E legată din sondaj și din fiecare email.
+- **Dreptul la ștergere, self-service**: în pagina de dezabonare, clientul are butonul
+  „Șterge-mi datele”. Dispar numele, emailul și telefonul; nota rămâne doar ca cifră anonimă.
+- **Cererile primite pe email** se rezolvă din `Admin → GDPR`: cauți persoana, îi descarci toate
+  datele ca JSON (dreptul de acces) sau le ștergi. Termenul legal de răspuns este 30 de zile.
+- **Păstrare limitată**: după `DATA_RETENTION_MONTHS` (implicit 24) datele care identifică o
+  persoană se anonimizează automat, zilnic. Statisticile rămân intacte.
+
+Textul notei este un punct de plecare rezonabil, nu consultanță juridică. Dacă ai volume mari sau
+date sensibile, dă-l unui avocat la citit.
+
+### Recenzii publice
+
+Dacă pui `REVIEW_URL` (Google, Facebook, Trustpilot), pagina de mulțumire invită la o recenzie
+publică. **Linkul se arată tuturor, indiferent de notă** — selectarea recenziilor după scor
+(„review gating”) încalcă politica Google și îți poate afecta profilul.
+
+## 4. Cum se calculează scorul
 
 - **0–6 detractori**, **7–8 pasivi**, **9–10 promotori**
 - `NPS = % promotori − % detractori`, rotunjit, între −100 și +100
@@ -51,7 +102,7 @@ generatorul de coduri QR, fișierele aplicației instalabile și alertele la det
   deci o variație de 5 puncte între trimestre nu înseamnă nimic. Sub ~100 de răspunsuri,
   citește trendul, nu cifra exactă.
 
-## 4. De ce ai nevoie ca să funcționeze (partea non-tehnică)
+## 5. De ce ai nevoie ca să funcționeze (partea non-tehnică)
 
 Programul e partea ușoară. Ca măsurătoarea să fie utilă, ai nevoie de:
 
@@ -73,7 +124,7 @@ Programul e partea ușoară. Ca măsurătoarea să fie utilă, ai nevoie de:
    și păstrezi datele doar cât ai nevoie. Aplicația salvează email, nume, companie,
    segment, scor și comentariu — nimic altceva, local, în fișierul tău SQLite.
 
-## 5. Trimiterea automată pe email
+## 6. Trimiterea automată pe email
 
 ### Cum funcționează
 
@@ -131,7 +182,7 @@ Ambele variante sunt sigure dacă rulează simultan: invitația se rezervă în 
 Rămâne disponibilă: **Export CSV pentru mail-merge** îți dă `email, nume, companie, segment, link`
 și trimiți din Gmail Mail Merge, Outlook sau Mailchimp cu textul tău.
 
-## 6. Întrebări suplimentare, locații și coduri QR
+## 7. Întrebări suplimentare, locații și coduri QR
 
 ### Întrebări proprii
 
@@ -167,7 +218,7 @@ Dacă în magazin nu e semnal bun, pagina sondajului se încarcă din memoria te
 se salvează local și pleacă singur când revine conexiunea. Clientul vede „răspunsul tău este salvat”,
 nu o eroare.
 
-## 7. Alerte la detractori
+## 8. Alerte la detractori
 
 Un detractor care așteaptă trei zile e un client pierdut. De aceea, la fiecare răspuns cu
 **scor 0–6** pleacă imediat o alertă, iar clientul rămâne într-o listă de lucru până când
@@ -209,7 +260,7 @@ Numărul din bara de sus îți arată câți te așteaptă.
   cazurile grave.
 - Se pot opri **per campanie**, din pagina campaniei.
 
-## 8. Aplicație instalabilă pe telefon (PWA)
+## 9. Aplicație instalabilă pe telefon (PWA)
 
 Nu e nevoie de App Store și nici de cont de developer.
 
@@ -227,7 +278,7 @@ scurtături către Dashboard / Răspunsuri / Locații) și `public/sw.js` (servi
 sondaj merg offline, restul arată o pagină clară „Nu ai conexiune”). Paginile de administrare nu se
 păstrează în cache, ca să nu vezi date vechi.
 
-## 9. Structura codului
+## 10. Structura codului
 
 ```
 src/
@@ -240,6 +291,10 @@ src/
   views/             HTML-ul (layout + CSS, sondaj, admin)
   qr.js              generator de coduri QR (SVG), scris de la zero
   alerts.js          alerta imediata la detractori (email + webhook)
+  format.js          ora Romaniei, date, plural romanesc, numere de telefon
+  calendar.js        sarbatorile legale romanesti si programul de trimitere
+  gdpr.js            export, stergere si pastrarea limitata a datelor
+  limiter.js         limitare la autentificare si anti-spam pe sondaj
   mailer.js          client SMTP propriu (fara dependente) + modul .eml pentru probe
   emails.js          șabloanele de invitație și de reamintire
   scheduler.js       robotul: ce se trimite, când și cu ce protecții
@@ -265,7 +320,10 @@ Rute principale:
 | GET | `/admin` | dashboard (necesită autentificare) |
 | GET | `/admin/raspunsuri.csv` | export răspunsuri |
 | GET | `/s/:slug?loc=<locație>` | sondaj deschis prin scanarea unui cod QR |
+| GET | `/confidentialitate` | nota de informare GDPR |
+| POST | `/sterge-date/:token` | ștergerea datelor, la cererea clientului |
 | GET | `/admin/alerte` | detractorii deschiși + jurnalul alertelor |
+| GET | `/admin/date-personale` | cereri GDPR: căutare, export, ștergere |
 | GET | `/admin/locatii` | locații + coduri QR |
 | GET | `/admin/afise` | afișele de printat (A4, un cod QR per locație) |
 | GET | `/manifest.webmanifest`, `/sw.js` | fișierele aplicației instalabile |
@@ -273,17 +331,20 @@ Rute principale:
 | POST | `/dezabonare/:token` | dezabonarea propriu-zisă (și butonul din Gmail) |
 | GET | `/healthz` | verificare de sănătate pentru hosting |
 
-## 10. Punere în producție
+## 11. Punere în producție
 
 - Setează `ADMIN_TOKEN` (parolă lungă) și `PUBLIC_URL` (domeniul real, cu `https://`).
 - Rulează în spatele unui reverse proxy cu TLS (Caddy, Nginx) — cookie-ul de admin e
   `HttpOnly` + `SameSite=Lax`, dar parola circulă doar criptat dacă ai HTTPS. HTTPS este și
   condiția ca aplicația să poată fi instalată pe telefon.
+- Pune `TRUST_PROXY=1` **numai** dacă aplicația chiar stă în spatele propriului reverse proxy:
+  altfel, oricine își poate falsifica adresa IP și poate ocoli limitările.
 - Backup = copierea fișierului `data/nps.db` (oprește serverul sau folosește
-  `sqlite3 data/nps.db ".backup backup.db"`).
+  `sqlite3 data/nps.db ".backup backup.db"`). Baza conține date personale: ține copiile
+  criptate și șterge-le după perioada de păstrare.
 - Serviciu systemd / container: comanda e `node src/server.js`, nimic de compilat.
 
-## 11. Limite cunoscute (conștiente, pentru un MVP)
+## 12. Limite cunoscute (conștiente, pentru un MVP)
 
 - O singură parolă de admin, fără conturi per utilizator.
 - Fără aplicație nativă în App Store / Google Play: aplicația se instalează ca PWA, direct din
@@ -293,5 +354,8 @@ Rute principale:
 - O singură reamintire per invitație; nu există secvențe de mai multe mesaje.
 - Fără grafic interactiv (dashboardul desenează bare simple în HTML/CSS).
 - Fără multi-tenant: o instalare = o organizație.
+- Limitările anti-spam și cele de autentificare se țin în memoria procesului: dacă rulezi mai
+  multe instanțe în paralel, fiecare are propria socoteală.
+- Nu trimite SMS: pentru asta ai nevoie de un furnizor (Twilio, Vonage sau un agregator local).
 
 Fiecare dintre ele se adaugă peste structura existentă fără rescriere.

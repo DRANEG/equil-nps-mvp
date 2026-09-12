@@ -81,7 +81,7 @@ function questionField(question) {
   }></textarea>`;
 }
 
-export function thanksPage({ score = null, campaignName = '', offline = false }) {
+export function thanksPage({ score = null, campaignName = '', offline = false, reviewUrl = '', reviewLabel = '' }) {
   const body = `
 <div class="card" style="text-align:center">
   <h1>Mulțumim!</h1>
@@ -92,7 +92,17 @@ export function thanksPage({ score = null, campaignName = '', offline = false })
   }
   ${campaignName ? `<br>Campanie: ${escapeHtml(campaignName)}` : ''}</p>
   <p class="muted small">Feedback-ul ajunge direct la echipa care se ocupă de acest serviciu.</p>
-</div>`;
+</div>
+${
+  reviewUrl && !offline
+    ? `<div class="card" style="text-align:center">
+        <p style="margin:0 0 12px">Dacă ai un minut în plus, o recenzie publică ne ajută mult.</p>
+        <a class="btn" href="${escapeHtml(reviewUrl)}" target="_blank" rel="noopener">
+          ${escapeHtml(reviewLabel || 'Lasă o recenzie')}
+        </a>
+      </div>`
+    : ''
+}`;
   return page({ title: 'Mulțumim', body, narrow: true, scripts: ['/sondaj.js'] });
 }
 

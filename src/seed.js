@@ -26,20 +26,20 @@ const locations = [
 ];
 
 const people = [
-  ['ana.pop@client.ro', 'Ana Pop', 'Client SRL', 'Enterprise', 10, 'Suport prompt si oameni care inteleg businessul nostru.'],
-  ['mihai.i@client.ro', 'Mihai Ionescu', 'Alt Client SRL', 'IMM', 9, 'Produsul e stabil, ne-a scurtat mult timpul de raportare.'],
-  ['dana@retailx.ro', 'Dana Marin', 'RetailX', 'Enterprise', 8, 'Bun, dar ne-ar ajuta un export automat.'],
-  ['radu@startup.io', 'Radu Stan', 'Startup.io', 'Startup', 6, 'Onboardingul a durat prea mult si documentatia e subtire.'],
-  ['elena@fabrica.ro', 'Elena Dobre', 'Fabrica SA', 'Enterprise', 9, 'Relatia cu account managerul face diferenta.'],
-  ['paul@imm.ro', 'Paul Georgescu', 'IMM Consult', 'IMM', 3, 'Doua incidente in ultima luna, fara notificare din partea voastra.'],
-  ['ioana@retailx.ro', 'Ioana Preda', 'RetailX', 'Enterprise', 10, 'Cel mai bun raport calitate-pret de pe piata.'],
-  ['victor@startup.io', 'Victor Lupu', 'Startup.io', 'Startup', 7, 'Ok, dar pretul creste repede cand adaugi utilizatori.'],
-  ['carmen@fabrica.ro', 'Carmen Ilie', 'Fabrica SA', 'Enterprise', 9, null],
-  ['sorin@imm.ro', 'Sorin Marcu', 'IMM Consult', 'IMM', 5, 'Interfata e greoaie pentru colegii din depozit.'],
+  ['ana.pop@client.ro', 'Ana Pop', 'Client SRL', 'Enterprise', 10, 'Suport prompt si oameni care inteleg businessul nostru.', '0721111222'],
+  ['mihai.i@client.ro', 'Mihai Ionescu', 'Alt Client SRL', 'IMM', 9, 'Produsul e stabil, ne-a scurtat mult timpul de raportare.', '0722333444'],
+  ['dana@retailx.ro', 'Dana Marin', 'RetailX', 'Enterprise', 8, 'Bun, dar ne-ar ajuta un export automat.', '0733444555'],
+  ['radu@startup.io', 'Radu Stan', 'Startup.io', 'Startup', 6, 'Onboardingul a durat prea mult si documentatia e subtire.', '0744555666'],
+  ['elena@fabrica.ro', 'Elena Dobre', 'Fabrica SA', 'Enterprise', 9, 'Relatia cu account managerul face diferenta.', '0755666777'],
+  ['paul@imm.ro', 'Paul Georgescu', 'IMM Consult', 'IMM', 3, 'Doua incidente in ultima luna, fara notificare din partea voastra.', '0766777888'],
+  ['ioana@retailx.ro', 'Ioana Preda', 'RetailX', 'Enterprise', 10, 'Cel mai bun raport calitate-pret de pe piata.', '0777888999'],
+  ['victor@startup.io', 'Victor Lupu', 'Startup.io', 'Startup', 7, 'Ok, dar pretul creste repede cand adaugi utilizatori.', '0788999000'],
+  ['carmen@fabrica.ro', 'Carmen Ilie', 'Fabrica SA', 'Enterprise', 9, null, '0799000111'],
+  ['sorin@imm.ro', 'Sorin Marcu', 'IMM Consult', 'IMM', 5, 'Interfata e greoaie pentru colegii din depozit.', '0721222333'],
 ];
 
-people.forEach(([email, name, company, segment, score, comment], index) => {
-  const contact = upsertContact(db, { email, name, company, segment });
+people.forEach(([email, name, company, segment, score, comment, phone], index) => {
+  const contact = upsertContact(db, { email, name, company, segment, phone });
   const invite = createInvite(db, campaign.id, contact.id);
   const location = locations[index % locations.length];
   const response = saveResponse(db, {

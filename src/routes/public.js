@@ -111,6 +111,10 @@ export function thanks(req, res, { url }) {
     thanksPage({
       score: isValidScore(score) ? score : null,
       offline: url.searchParams.get('offline') === '1',
+      // Invitatia la recenzie se arata tuturor, nu doar celor multumiti:
+      // Google interzice explicit selectarea recenziilor dupa nota data.
+      reviewUrl: process.env.REVIEW_URL || '',
+      reviewLabel: process.env.REVIEW_LABEL || 'Lasă o recenzie pe Google',
     }),
   );
 }
