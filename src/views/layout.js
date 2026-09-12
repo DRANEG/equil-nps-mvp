@@ -133,6 +133,7 @@ export function adminNav(active = '', openAlerts = 0) {
       ${link('/admin/locatii', 'locations', 'Locații')}
       ${link('/admin/raspunsuri', 'responses', 'Răspunsuri')}
       ${alerte}
+      ${link('/admin/date-personale', 'gdpr', 'GDPR')}
       <a href="/admin/logout">Ieșire</a>
     </nav>
   </div></header>`;

@@ -3,6 +3,10 @@ import {
   loginPage, dashboardPage, campaignsPage, campaignDetailPage, responsesPage,
   locationsPage, postersPage, alertsPage,
 } from '../views/admin.js';
+import { personalDataPage } from '../views/gdpr.js';
+import {
+  operatorFromEnv, findContactByEmail, exportContactData, anonymizeContact, runRetention,
+} from '../gdpr.js';
 import { alertConfigFromEnv, alertsDescription } from '../alerts.js';
 import { qrSvg } from '../qr.js';
 import { formatDateTime, formatPhone, normalizePhone } from '../format.js';
@@ -394,4 +398,50 @@ export async function campaignAlerts(req, res, { db, params }) {
   const form = await readForm(req);
   setCampaignAlerts(db, Number(params.id), form.alerte === '1');
   return redirect(res, `/admin/campanii/${params.id}`);
+}
+
+/* ------------------------------ date personale ------------------------------- */
+
+export function personalData(req, res, { db, url }) {
+  const cautare = String(url.searchParams.get('email') || '').trim();
+  const contact = cautare ? findContactByEmail(db, cautare) : null;
+  return html(
+    res,
+    200,
+    personalDataPage({
+      cautare,
+      contact,
+      date: contact ? exportContactData(db, contact.id) : null,
+      operator: operatorFromEnv(),
+      mesaj: url.searchParams.get('mesaj'),
+    }),
+  );
+}
+
+export function personalDataExport(req, res, { db, url }) {
+  const contact = findContactByEmail(db, String(url.searchParams.get('email') || ''));
+  if (!contact) return html(res, 404, noticePage('Inexistent', 'Nu există nicio persoană cu acest email.'));
+  const date = exportContactData(db, contact.id);
+  return send(res, 200, JSON.stringify(date, null, 2), {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Content-Disposition': `attachment; filename="date-${contact.email.replace(/[^a-z0-9._-]/gi, '_')}.json"`,
+  });
+}
+
+export async function personalDataDelete(req, res, { db }) {
+  const form = await readForm(req);
+  const contact = findContactByEmail(db, String(form.email || ''));
+  if (!contact) return redirect(res, '/admin/date-personale?mesaj=Nu+am+gasit+persoana');
+  const rezultat = anonymizeContact(db, contact.id);
+  const mesaj = `Datele pentru ${rezultat.email} au fost șterse. Au rămas ${rezultat.raspunsuri} răspunsuri anonime.`;
+  return redirect(res, `/admin/date-personale?mesaj=${encodeURIComponent(mesaj)}`);
+}
+
+export function personalDataRetention(req, res, { db }) {
+  const { luniRetentie } = operatorFromEnv();
+  const rezultat = runRetention(db, { months: luniRetentie });
+  const mesaj =
+    `Curățenie făcută: ${rezultat.raspunsuri} răspunsuri anonimizate, ` +
+    `${rezultat.invitatii} invitații șterse, ${rezultat.contacte} contacte eliminate.`;
+  return redirect(res, `/admin/date-personale?mesaj=${encodeURIComponent(mesaj)}`);
 }

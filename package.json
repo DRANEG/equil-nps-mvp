@@ -12,7 +12,8 @@
     "dev": "node --watch src/server.js",
     "seed": "node src/seed.js",
     "test": "node --test \"test/**/*.test.js\"",
-    "trimite": "node src/send.js"
+    "trimite": "node src/send.js",
+    "retentie": "node src/retentie.js"
   },
   "license": "UNLICENSED"
 }

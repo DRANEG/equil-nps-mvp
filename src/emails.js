@@ -24,6 +24,7 @@ export function invitationEmail({ invite, publicUrl, brand = brandName() }) {
       question: invite.question,
       link,
       unsubscribe,
+      privacy: `${publicUrl}/confidentialitate`,
       cta: 'Alege o notă de la 0 la 10',
     }),
     text: [
@@ -39,6 +40,7 @@ export function invitationEmail({ invite, publicUrl, brand = brandName() }) {
       `Echipa ${brand}`,
       '',
       `Dacă nu vrei să mai primești astfel de mesaje: ${unsubscribe}`,
+      `Cum folosim datele: ${publicUrl}/confidentialitate`,
     ].join('\n'),
     unsubscribe,
   };
@@ -61,6 +63,7 @@ export function reminderEmail({ invite, publicUrl, brand = brandName() }) {
       question: invite.question,
       link,
       unsubscribe,
+      privacy: `${publicUrl}/confidentialitate`,
       cta: 'Alege o notă de la 0 la 10',
       footerNote: 'Este ultimul mesaj pe care ți-l trimitem despre acest sondaj.',
     }),
@@ -79,6 +82,7 @@ export function reminderEmail({ invite, publicUrl, brand = brandName() }) {
       `Echipa ${brand}`,
       '',
       `Dezabonare: ${unsubscribe}`,
+      `Cum folosim datele: ${publicUrl}/confidentialitate`,
     ].join('\n'),
     unsubscribe,
   };
@@ -103,7 +107,7 @@ function scaleTable(link) {
   </table>`;
 }
 
-function shell({ brand, salut, intro, question, link, unsubscribe, cta, footerNote = '' }) {
+function shell({ brand, salut, intro, question, link, unsubscribe, privacy, cta, footerNote = '' }) {
   return `<!doctype html>
 <html lang="ro"><body style="margin:0;background:#f6f7f9;padding:24px 12px">
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
@@ -130,7 +134,8 @@ function shell({ brand, salut, intro, question, link, unsubscribe, cta, footerNo
     <tr><td style="padding:12px 24px 20px;border-top:1px solid #e4e7ec;font-size:12px;color:#6b7280;line-height:1.5">
       ${footerNote ? `<p style="margin:0 0 6px">${escapeHtml(footerNote)}</p>` : ''}
       <p style="margin:0">Primești acest mesaj pentru că ești clientul nostru. Răspunsul este folosit
-      doar pentru îmbunătățirea serviciului.
+      doar pentru îmbunătățirea serviciului &mdash;
+      <a href="${escapeHtml(privacy)}" style="color:#6b7280">cum folosim datele</a>.
       <a href="${escapeHtml(unsubscribe)}" style="color:#6b7280">Nu mai vreau astfel de mesaje</a>.</p>
     </td></tr>
   </table>

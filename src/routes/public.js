@@ -2,6 +2,8 @@ import { html, json, redirect, readForm, escapeHtml } from '../http.js';
 import { surveyPage, thanksPage, noticePage, offlinePage } from '../views/survey.js';
 import { categorize, isValidScore } from '../nps.js';
 import { alertInBackground } from '../alerts.js';
+import { privacyPage } from '../views/gdpr.js';
+import { operatorFromEnv, anonymizeContact } from '../gdpr.js';
 import {
   getCampaignBySlug, getInviteByToken, saveResponse, unsubscribeByToken,
   listQuestions, saveAnswers, getLocationBySlug, getCampaign,
@@ -94,6 +96,28 @@ export function thanks(req, res, { url }) {
       score: isValidScore(score) ? score : null,
       offline: url.searchParams.get('offline') === '1',
     }),
+  );
+}
+
+export function privacy(req, res) {
+  return html(res, 200, privacyPage(operatorFromEnv()));
+}
+
+// POST /sterge-date/:token — dreptul la stergere, direct din linkul primit pe email.
+export function eraseMyData(req, res, { db, params }) {
+  const invite = getInviteByToken(db, params.token);
+  if (!invite) {
+    return html(res, 404, noticePage('Link invalid', 'Linkul nu mai este valabil.'));
+  }
+  const rezultat = anonymizeContact(db, invite.contact_id);
+  return html(
+    res,
+    200,
+    noticePage(
+      'Datele au fost șterse',
+      `Nu mai păstrăm numele, emailul sau telefonul pentru ${rezultat.email}. ` +
+        'Notele rămân doar ca cifre anonime, fără legătură cu tine.',
+    ),
   );
 }
 
@@ -208,6 +232,16 @@ export function unsubscribeForm(req, res, { db, params }) {
     <form method="POST" action="/dezabonare/${escapeHtml(invite.token)}">
       <button class="btn" type="submit">Confirmă dezabonarea</button>
     </form>
+    <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+    <h2 style="margin:0 0 6px;font-size:15px">Vrei să dispară complet datele tale?</h2>
+    <p class="small muted">Ștergem numele, emailul și telefonul. Notele rămân doar ca cifre anonime,
+    fără legătură cu tine. Este dreptul tău, conform GDPR.</p>
+    <form method="POST" action="/sterge-date/${escapeHtml(invite.token)}">
+      <button class="btn ghost" type="submit">Șterge-mi datele</button>
+    </form>
+    <p class="small muted" style="margin-top:16px">
+      <a href="/confidentialitate">Cum folosim datele</a>
+    </p>
   </div>`;
   return html(res, 200, pageShell({ title: 'Dezabonare', body, narrow: true }));
 }

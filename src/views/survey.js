@@ -31,7 +31,8 @@ export function surveyPage({
     <p style="margin-top:16px"><button class="btn" type="submit">Trimite răspunsul</button></p>
   </form>
 </div>
-<p class="small muted">Datele sunt folosite doar pentru îmbunătățirea serviciului.</p>`;
+<p class="small muted">Datele sunt folosite doar pentru îmbunătățirea serviciului.
+<a href="/confidentialitate">Cum le folosim</a>.</p>`;
 
   return page({ title: campaign.name, body, narrow: true, scripts: ['/sondaj.js'] });
 }

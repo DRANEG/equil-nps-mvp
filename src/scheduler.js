@@ -7,6 +7,7 @@ import {
 } from './db.js';
 import { invitationEmail, reminderEmail } from './emails.js';
 import { canSendNow, sendWindowFromEnv, describeWindow } from './calendar.js';
+import { runRetention, operatorFromEnv } from './gdpr.js';
 
 export const DEFAULTS = {
   reminderDays: Number(process.env.REMINDER_DAYS) || 5,
@@ -122,10 +123,32 @@ export function startScheduler(db, options = {}) {
     }
   };
 
+  // Curatenia GDPR: o data pe zi, nu la fiecare trecere de trimitere.
+  const curatenie = () => {
+    try {
+      const { luniRetentie } = operatorFromEnv();
+      const rezultat = runRetention(db, { months: luniRetentie });
+      if (rezultat.raspunsuri || rezultat.contacte || rezultat.invitatii) {
+        console.log(
+          `[gdpr] pastrare ${luniRetentie} luni: ${rezultat.raspunsuri} raspunsuri anonimizate, ` +
+            `${rezultat.invitatii} invitatii sterse, ${rezultat.contacte} contacte eliminate`,
+        );
+      }
+    } catch (err) {
+      console.error('[gdpr] curatenia a esuat:', err.message);
+    }
+  };
+
   const timer = setInterval(tick, Math.max(1, intervalMinutes) * 60_000);
   timer.unref?.();
+  const timerCuratenie = setInterval(curatenie, 24 * 60 * 60_000);
+  timerCuratenie.unref?.();
   setTimeout(tick, 5_000).unref?.(); // o prima trecere la scurt timp dupa pornire
-  return () => clearInterval(timer);
+  setTimeout(curatenie, 30_000).unref?.();
+  return () => {
+    clearInterval(timer);
+    clearInterval(timerCuratenie);
+  };
 }
 
 function sleep(ms) {
