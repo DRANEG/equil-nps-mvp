@@ -51,6 +51,7 @@ N_VANZARI, N_TINTE, N_NPS = _n("N_VANZARI", 1000), _n("N_TINTE", 300), _n("N_NPS
 N_OPP, N_CONTACTE = _n("N_OPP", 60), _n("N_CONTACTE", 30)
 OUT = _os.environ.get("OUT", "dist/EQUIL_Growth_Intelligence_v0_2.xlsx")
 
+from istoric import adauga_istoric
 from piata import adauga_concurenta, adauga_perceptie
 from stil import (verifica, INK, TEAL, TEAL_LIGHT, SAND, INPUT_FILL, CALC_FILL, WHITE, GREY_TXT,
                   C_SER1, C_SER2, C_MUTED, C_ORD, C_GOOD, C_WARN, C_BAD,
@@ -363,9 +364,9 @@ for key, color in (("Galben", INPUT_FILL), ("Gri", CALC_FILL), ("Verde-închis",
 ws = wb.create_sheet("01_FIRMA")
 title_block(ws, "01 — PROFILUL FIRMEI",
             "Se completează la kickoff, împreună cu clientul. Câmpurile galbene sunt de completat.")
-ws.column_dimensions["A"].width = 34
-ws.column_dimensions["B"].width = 40
-ws.column_dimensions["C"].width = 58
+# A = etichete, B/C/D = cei trei ani din istoricul financiar, E = explicații
+for _col, _w in (("A", 34), ("B", 17), ("C", 17), ("D", 17), ("E", 58)):
+    ws.column_dimensions[_col].width = _w
 
 firma = [
     ("IDENTIFICARE", None, None),
@@ -382,8 +383,6 @@ firma = [
     ("DIMENSIUNE", None, None),
     ("Număr total angajați", "", "Total, nu doar vânzări."),
     ("Din care în vânzări", "", ""),
-    ("Cifra de afaceri — ultimul an încheiat", "", "Fără TVA."),
-    ("Profit brut — ultimul an încheiat", "", ""),
     ("Număr clienți activi", "", "Clienți cu cel puțin o achiziție în ultimele 12 luni."),
     ("Număr produse / SKU active", "", ""),
     ("Sezonalitate", "", "Lunile de vârf și lunile slabe."),
@@ -409,18 +408,24 @@ firma = [
     ("Nume fișier", "", "Convenție: EQUIL_<cod>_<NumeFirma>_<AAAA-LL>.xlsx — ex. EQUIL_EQ-0001_AlfaSRL_2026-06.xlsx"),
 ]
 r = 4
+rand_firma = {}
 for label, val, note in firma:
     if val is None:
         c = ws.cell(row=r, column=1, value=label)
         c.font = Font(bold=True, size=11, color=WHITE)
-        for k in (1, 2, 3):
+        for k in range(1, 6):
             ws.cell(row=r, column=k).fill = PatternFill("solid", fgColor=TEAL)
         ws.row_dimensions[r].height = 20
     else:
-        label_value(ws, r, label, val, note)
+        label_value(ws, r, label, val, note, span=3, note_col=5)
+        rand_firma[label] = r
     r += 1
 ws.sheet_view.showGridLines = False
-add_dv(ws, lista_ref("Moneda"), "B36")
+add_dv(ws, lista_ref("Moneda"), f"B{rand_firma['Moneda de raportare']}")
+
+# 09_PARAMETRI se construiește mai jos; referințele sunt doar text, foaia există la salvare.
+ISTORIC = adauga_istoric(ws, r + 1, an_ref=f"'{SH_PAR}'!$B$6",
+                         moneda_ref=f"'{SH_PAR}'!$B$10", note_col=5)
 
 
 # ---------------------------------------------------------------- 02_CONTACTE
@@ -733,7 +738,12 @@ label_value(ws, 23, "Scor minim pentru prioritate HIGH", 40000, "Scor = Impact �
 label_value(ws, 24, "Scor minim pentru prioritate MEDIUM", 20000, "", F_MONEY)
 
 par_section(26, "META")
-label_value(ws, 27, "Client analizat", "=IF('01_FIRMA'!B5=\"\",\"[completează 01_FIRMA]\",'01_FIRMA'!B5)", "Se preia din 01_FIRMA.", None, input_cell=False)
+# referința se calculează din poziția reală a câmpului, ca să nu se strice
+# când se adaugă sau se scoate un rând din profilul firmei
+_rand_nume = rand_firma["Denumire legală"]
+label_value(ws, 27, "Client analizat",
+            f'=IF(\'01_FIRMA\'!B{_rand_nume}="","[completează 01_FIRMA]",\'01_FIRMA\'!B{_rand_nume})',
+            "Se preia din 01_FIRMA.", None, input_cell=False)
 label_value(ws, 28, "Consultant EQUIL", "", "")
 label_value(ws, 29, "Versiune fișier", "v0.2", "", None, input_cell=False)
 label_value(ws, 30, "Data generării raportului", "", "", F_DATE)

@@ -104,6 +104,21 @@ dim_first = 15
 for i, n in enumerate(NOTE_SPEC):
     wsp.cell(row=dim_first + i, column=2, value=n)
 
+
+# --- istoric financiar pe trei ani (cifre de tip bilanț) ------------------
+wsf = wb["01_FIRMA"]
+rand_ani = next(r for r in range(1, wsf.max_row + 1) if wsf.cell(row=r, column=1).value == "An")
+ISTORIC_DATE = {
+    "Cifră de afaceri": (405000, 468000, 512000),
+    "Profit brut":      (109000, 117000, 108000),
+    "Profit net":       (91000, 98000, 89000),
+    "Număr angajați":   (3, 4, 4),
+}
+for eticheta, valori in ISTORIC_DATE.items():
+    rr = next(r for r in range(rand_ani, rand_ani + 8) if wsf.cell(row=r, column=1).value == eticheta)
+    for k, v in enumerate(valori):
+        wsf.cell(row=rr, column=2 + k, value=v)
+
 wb["02_SETARI"]["B12"] = TINTA
 wb.save(path)
 
@@ -171,6 +186,25 @@ for i in range(len(clienti)):
         val("21_CE_SE_INTAMPLA", f"E{r}"), val("21_CE_SE_INTAMPLA", f"K{r}"),
         val("21_CE_SE_INTAMPLA", f"L{r}"), str(val("21_CE_SE_INTAMPLA", f"M{r}"))[:64]))
 
+
+
+print("\n== Istoric financiar (01_FIRMA) ==")
+wsf2 = wb["01_FIRMA"]
+ra = next(r for r in range(1, wsf2.max_row + 1) if wsf2.cell(row=r, column=1).value == "An")
+def _v(sh, cell):
+    try:
+        return val(sh, cell)
+    except KeyError:
+        return ""
+
+for rr in range(ra, ra + 10):
+    et = wsf2.cell(row=rr, column=1).value
+    if not et or et == "Sursa cifrelor":
+        continue
+    vals = [_v("01_FIRMA", f"{c}{rr}") for c in "BCD"]
+    print("   %-28s %-12s %-12s %-12s" % (str(et)[:28], *[str(v)[:12] for v in vals]))
+rc = next(r for r in range(ra, ra + 14) if wsf2.cell(row=r, column=1).value == "Ce se vede")
+print("\n   »", val("01_FIRMA", f"B{rc}"))
 
 print("\n== Piață și percepție ==")
 wsc2 = wb["12_CONCURENTA"]

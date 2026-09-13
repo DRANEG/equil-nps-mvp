@@ -27,6 +27,7 @@ from openpyxl.formatting.rule import CellIsRule
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
+from istoric import adauga_istoric
 from piata import adauga_concurenta, adauga_perceptie
 from stil import (verifica, INK, TEAL, TEAL_LIGHT, INPUT_FILL, CALC_FILL, WHITE, GREY_TXT,
                   C_SER1, C_SER2, C_GOOD, C_WARN, C_BAD,
@@ -654,16 +655,15 @@ ws_g.add_chart(g3, "A22")
 ws_f = wb.create_sheet("01_FIRMA")
 title_block(ws_f, "01 — DESPRE FIRMĂ",
             "Paisprezece rânduri, completate în discuția de început. Restul se vede din cifre.")
-ws_f.column_dimensions["A"].width = 34
-ws_f.column_dimensions["B"].width = 38
-ws_f.column_dimensions["C"].width = 62
+# A = etichete, B/C/D = cei trei ani din istoricul financiar, E = explicații
+for _col, _w in (("A", 34), ("B", 17), ("C", 17), ("D", 17), ("E", 58)):
+    ws_f.column_dimensions[_col].width = _w
 CAMPURI = [
     ("Cod client EQUIL", "", "ID-ul tău intern: EQ-0001, EQ-0002…"),
     ("Denumirea firmei", "", ""),
     ("CUI", "", ""),
     ("Ce vinde, pe scurt", "", "O propoziție, în cuvintele lui."),
     ("Câți oameni lucrează acolo", "", "Cu tot cu patron."),
-    ("Cifra de afaceri anul trecut", "", "Fără TVA. Aproximativ e suficient."),
     ("Câți clienți are, aproximativ", "", ""),
     ("Cum emite facturile", "", "Smartbill, Oblio, FGO, Word, carnet — orice ar fi."),
     ("Poate exporta facturile în Excel?", "", "Da / Nu / Nu știu. De asta depinde cât durează totul."),
@@ -675,8 +675,10 @@ CAMPURI = [
 ]
 r = 4
 for eticheta, valoare, nota in CAMPURI:
-    label_value(ws_f, r, eticheta, valoare, nota)
+    label_value(ws_f, r, eticheta, valoare, nota, span=3, note_col=5)
     r += 1
+
+ISTORIC = adauga_istoric(ws_f, r + 1, an_ref=P_PANA, moneda_ref=P_MONEDA, note_col=5)
 
 # ================================================================ 00_START
 ws_s = wb.create_sheet("00_START")

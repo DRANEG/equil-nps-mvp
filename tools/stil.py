@@ -57,16 +57,25 @@ def title_block(ws, title, subtitle=None, width_cols=6):
     ws.sheet_view.showGridLines = False
 
 
-def label_value(ws, row, label, value=None, note=None, fmt=None, input_cell=True):
+def label_value(ws, row, label, value=None, note=None, fmt=None, input_cell=True,
+                span=1, note_col=3):
+    """Un rand eticheta / valoare. span>1 imbina celulele de valoare, ca sa incapa
+    text lung cand coloanele sunt inguste; note_col spune unde merge explicatia."""
     ws.cell(row=row, column=1, value=label).font = Font(bold=True, size=10, color=INK)
+    umplere = PatternFill("solid", fgColor=INPUT_FILL if input_cell else CALC_FILL)
+    for j in range(2, 2 + span):
+        cc = ws.cell(row=row, column=j)
+        cc.border = BORDER
+        cc.fill = umplere
+    if span > 1:
+        ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=1 + span)
     c = ws.cell(row=row, column=2, value=value)
-    c.border = BORDER
-    c.fill = PatternFill("solid", fgColor=INPUT_FILL if input_cell else CALC_FILL)
     c.font = Font(size=10, color="000000" if input_cell else GREY_TXT)
+    c.alignment = Alignment(vertical="center", wrap_text=span > 1)
     if fmt:
         c.number_format = fmt
     if note:
-        n = ws.cell(row=row, column=3, value=note)
+        n = ws.cell(row=row, column=note_col, value=note)
         n.font = Font(size=9, italic=True, color=GREY_TXT)
         n.alignment = Alignment(wrap_text=True, vertical="center")
     return c

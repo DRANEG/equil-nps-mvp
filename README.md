@@ -15,6 +15,7 @@ Sunt două variante ale fișierului, pentru două mărimi de firmă.
 | `tools/build_equil_light.py` | Generatorul variantei Light |
 | `tools/stil.py` | Culorile, formatele și helperii comuni ambelor variante |
 | `tools/piata.py` | Modulul de concurență și percepție, folosit de ambele variante |
+| `tools/istoric.py` | Istoricul financiar pe trei ani + cele două grafice, în `01_FIRMA` |
 | `tools/test_workbook.py` | Test automat pentru varianta completă |
 | `tools/test_light.py` | Test automat pentru varianta Light |
 | `tools/audit_formulas.py` | Audit static: paranteze, referințe, funcții incompatibile cu Excel 2016 |
@@ -41,7 +42,8 @@ python3 tools/test_light.py               # același test, pentru varianta Light
 
 **Colectare de date — cine dă ce**
 - `00_GHID` — mod de lucru, cod de culori, setul minim viabil, reguli de igienă a datelor
-- `01_FIRMA` — profilul firmei, completat la kickoff
+- `01_FIRMA` — profilul firmei plus istoricul financiar pe trei ani (cifră de afaceri, profit
+  brut, profit net, angajați), cu marje, creștere, cifră pe angajat și două grafice
 - `02_CONTACTE` — data owners: ce set de date deține fiecare om din firmă, cu termen și status
 - `03_CHECKLIST_DATE` — fiecare câmp cerut: ce înseamnă, format, exemplu, din ce sistem se scoate,
   ce rol îl poate da, ce KPI deblochează, status și dată de primire; are și un contor de progres
