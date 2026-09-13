@@ -73,8 +73,12 @@ def label_value(ws, row, label, value=None, note=None, fmt=None, input_cell=True
 
 
 def add_dv(ws, formula_range, cells, allow_blank=True):
-    """Lista derulanta care citeste valorile dintr-un interval."""
-    dv = DataValidation(type="list", formula1=f"={formula_range}", allow_blank=allow_blank)
+    """Lista derulanta care citeste valorile dintr-un interval.
+
+    Formula se scrie FARA semnul egal: in XML-ul unui fisier Excel, formula1
+    a unei validari nu incepe cu "=". Cu el, Excel poate cere repararea fisierului.
+    """
+    dv = DataValidation(type="list", formula1=formula_range.lstrip("="), allow_blank=allow_blank)
     dv.error = "Valoare în afara listei permise. Alege din listă sau completează lista de valori."
     dv.errorTitle = "Valoare neacceptată"
     ws.add_data_validation(dv)

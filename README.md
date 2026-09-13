@@ -18,6 +18,7 @@ Sunt două variante ale fișierului, pentru două mărimi de firmă.
 | `tools/test_workbook.py` | Test automat pentru varianta completă |
 | `tools/test_light.py` | Test automat pentru varianta Light |
 | `tools/audit_formulas.py` | Audit static: paranteze, referințe, funcții incompatibile cu Excel 2016 |
+| `tools/verifica_fisier.py` | Verificare structurală a fișierului salvat — exact lucrurile pentru care Excel cere „repararea" |
 | `tools/glosar.py` | Cei 74 de termeni din foaia `04_DICTIONAR` |
 | `tools/build_ghid_html.py` | Generează ghidul HTML (glosar căutabil + proces + timpi) din aceleași date |
 | `dist/ghid_equil.html` | Ghidul de teren, publicat ca pagină |
@@ -31,6 +32,7 @@ python3 tools/build_equil_workbook.py     # -> dist/EQUIL_Growth_Intelligence_v0
 python3 tools/build_equil_light.py        # -> dist/EQUIL_Light_v0_2.xlsx
 pip install formulas                      # doar pentru test
 python3 tools/audit_formulas.py           # verificare statică a formulelor
+python3 tools/verifica_fisier.py          # verificare structurală a fișierelor salvate
 python3 tools/test_workbook.py            # verifică valorile calculate pe date de test
 python3 tools/test_light.py               # același test, pentru varianta Light
 ```
@@ -109,6 +111,24 @@ Scorul de percepție (media primelor două, pe 0-100) ține locul NPS-ului pân�
 măsoare, dar nu îl înlocuiește: fișierul le afișează separat, arată la ce nivel e firma și scrie
 următorul pas. Când sursele nu sunt de acord, dezacordul e concluzia — o notă publică mult peste
 NPS înseamnă o firmă care arată mai bine pe internet decât în relația reală.
+
+## Verificarea fișierelor
+
+Un fișier poate fi valid ca formule și totuși să ceară „reparare” la deschiderea în Excel, dacă
+XML-ul încalcă schema. De aceea sunt trei niveluri de verificare:
+
+1. `stil.verifica()` — rulează în generator, înainte de salvare: paranteze și ghilimele.
+2. `tools/audit_formulas.py` — funcții interzise, referințe rupte, foi inexistente.
+3. `tools/verifica_fisier.py` — structura pachetului: XML bine format, relații întregi, reguli de
+   formatare condiționată cu operator valid pentru tipul lor, zone îmbinate care nu se suprapun,
+   validări de date corecte, grafice care indică foi existente.
+
+Verificarea finală se face deschizând fișierul cu LibreOffice Calc și exportând fiecare foaie în CSV:
+dacă apare vreun `#NAME?`, `#REF!` sau `Err:` undeva, iese la iveală acolo.
+
+```bash
+soffice --headless --convert-to xlsx --outdir /tmp/verif dist/EQUIL_Light_v0_2.xlsx
+```
 
 ## Un fișier pentru fiecare firmă
 

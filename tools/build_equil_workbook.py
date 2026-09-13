@@ -1439,7 +1439,7 @@ CONCLUZII = [
      f'IF({CONC["cota_grup"]}="","",", în care firma are "&{pct(CONC["cota_grup"])}&" din cifra grupului")&". "&'
      f'IF({CONC["nota_noastra"]}="","Firma nu are încă notă publică — verifică dacă are fișă Google Business.",'
      f'"Nota publică este "&FIXED({CONC["nota_noastra"]},1)&" din 5"&'
-     f'IF({CONC["nota_concurenti"]}="","."," , față de "&FIXED({CONC["nota_concurenti"]},1)&" media concurenților"&'
+     f'IF({CONC["nota_concurenti"]}="",".",", față de "&FIXED({CONC["nota_concurenti"]},1)&" media concurenților"&'
      f'IF({CONC["nota_noastra"]}>{CONC["nota_concurenti"]}+0.2," — poziție mai bună decât a lor.",'
      f'IF({CONC["nota_noastra"]}<{CONC["nota_concurenti"]}-0.2," — poziție mai slabă; se rezolvă înainte de a crește volumul.",'
      f'" — aceeași poziție."))))&'

@@ -11,7 +11,7 @@ iar foaia arata explicit la ce nivel e firma si care e urmatorul pas.
 
 Folosit de build_equil_workbook.py si de build_equil_light.py.
 """
-from openpyxl.formatting.rule import CellIsRule
+from openpyxl.formatting.rule import CellIsRule, FormulaRule
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
@@ -172,12 +172,15 @@ def adauga_concurenta(wb, nume_foaie, n_randuri, light=False):
             f'IF(${CA}{rr}>{NOI_CA}*1.2," · mai mare",'
             f'IF(${CA}{rr}<{NOI_CA}*0.8," · mai mic"," · cam cât noi")),"")))')
 
-    for semnal, culoare in (("E mai bine văzut", "F8D7DA"), ("Suntem mai bine văzuți", "D6F0D6")):
+    # Colorare dupa continutul textului: se face cu o regula de tip formula
+    # (FormulaRule). "containsText" NU este operator valid pentru o regula cellIs
+    # si produce un fisier pe care Excel cere sa il repare.
+    CUM = col["Cum stăm față de el"]
+    for fragment, culoare in (("E mai bine văzut", "F8D7DA"), ("Suntem mai bine", "D6F0D6")):
         ws.conditional_formatting.add(
-            f"{col['Cum stăm față de el']}{R0}:{col['Cum stăm față de el']}{last}",
-            CellIsRule(operator="containsText", formula=[f'NOT(ISERROR(SEARCH("{semnal}",'
-                                                        f'{col["Cum stăm față de el"]}{R0})))'],
-                       fill=PatternFill("solid", fgColor=culoare)))
+            f"{CUM}{R0}:{CUM}{last}",
+            FormulaRule(formula=[f'ISNUMBER(SEARCH("{fragment}",{CUM}{R0}))'],
+                        fill=PatternFill("solid", fgColor=culoare)))
 
     liste = {"surse_cifra": SURSE_CIFRA, "pret": PRET_FATA}
     if not light:

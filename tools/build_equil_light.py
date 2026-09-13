@@ -362,7 +362,7 @@ CONCLUZII = [
     f'IF({CONC["nota_noastra"]}="","Firma nu are încă notă publică — verifică dacă are fișă Google Business. '
     f'Un client nou o caută acolo înainte să sune.",'
     f'"Nota publică e "&FIXED({CONC["nota_noastra"]},1)&" din 5"&'
-    f'IF({CONC["nota_concurenti"]}="","."," , față de "&FIXED({CONC["nota_concurenti"]},1)&" media concurenților"&'
+    f'IF({CONC["nota_concurenti"]}="",".",", față de "&FIXED({CONC["nota_concurenti"]},1)&" media concurenților"&'
     f'IF({CONC["nota_noastra"]}>{CONC["nota_concurenti"]}+0.2," — stăm mai bine decât ei.",'
     f'IF({CONC["nota_noastra"]}<{CONC["nota_concurenti"]}-0.2," — stăm mai slab; asta se rezolvă înainte de a crește volumul.",'
     f'" — la fel ca ei."))))&'
