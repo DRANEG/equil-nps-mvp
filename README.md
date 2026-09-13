@@ -18,6 +18,7 @@ Sunt două variante ale fișierului, pentru două mărimi de firmă.
 | `tools/istoric.py` | Istoricul financiar pe trei ani + cele două grafice, în `01_FIRMA` |
 | `tools/test_workbook.py` | Test automat pentru varianta completă |
 | `tools/test_light.py` | Test automat pentru varianta Light |
+| `tools/audit_cifre.py` | Audit numeric: recalculează în Python fiecare celulă calculată și o compară cu Excel |
 | `tools/audit_formulas.py` | Audit static: paranteze, referințe, funcții incompatibile cu Excel 2016 |
 | `tools/verifica_fisier.py` | Verificare structurală a fișierului salvat — exact lucrurile pentru care Excel cere „repararea" |
 | `tools/glosar.py` | Cei 74 de termeni din foaia `04_DICTIONAR` |
@@ -36,6 +37,7 @@ python3 tools/audit_formulas.py           # verificare statică a formulelor
 python3 tools/verifica_fisier.py          # verificare structurală a fișierelor salvate
 python3 tools/test_workbook.py            # verifică valorile calculate pe date de test
 python3 tools/test_light.py               # același test, pentru varianta Light
+python3 tools/audit_cifre.py              # recalculează independent fiecare celulă calculată
 ```
 
 ## Structura workbook-ului (20 de foi)
@@ -124,6 +126,10 @@ XML-ul încalcă schema. De aceea sunt trei niveluri de verificare:
 3. `tools/verifica_fisier.py` — structura pachetului: XML bine format, relații întregi, reguli de
    formatare condiționată cu operator valid pentru tipul lor, zone îmbinate care nu se suprapun,
    validări de date corecte, grafice care indică foi existente.
+4. `tools/audit_cifre.py` — corectitudinea cifrelor: construiește o versiune redusă, o populează cu
+   date alese să fie dificile (storno negativ, client pierdut, client adormit, produs fără vânzări,
+   om plecat la mijlocul perioadei, ținte pe mai multe niveluri, răspunsuri NPS în afara perioadei)
+   și recalculează în Python fiecare celulă din foile de analiză, comparând-o cu ce dă Excel.
 
 Verificarea finală se face deschizând fișierul cu LibreOffice Calc și exportând fiecare foaie în CSV:
 dacă apare vreun `#NAME?`, `#REF!` sau `Err:` undeva, iese la iveală acolo.

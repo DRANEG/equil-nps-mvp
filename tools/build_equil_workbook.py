@@ -984,7 +984,10 @@ KPIS = [
     ("Valoare medie per linie", None, F_MONEY, "pct_ok", "Venit net / număr de linii."),
     ("Concentrare — cel mai mare client", None, F_PCT, "pp", "Ce procent din venit vine de la un singur client. Peste pragul setat = risc."),
     ("OAMENI", None, None, None, None),
-    ("FTE activ", f_fte, F_NUM, "pct_ok", "Normă întreagă echivalentă, activă în perioadă."),
+    ("FTE activ", f_fte, F_NUM, "pct_ok",
+     "Normă întreagă echivalentă. Numără pe oricine a fost activ măcar o zi din perioadă, "
+     "la norma lui întreagă — cine a plecat la mijloc contează tot, deci venitul pe FTE "
+     "iese ușor subestimat în perioadele cu plecări."),
     ("Venit / FTE", None, F_MONEY, "pct_ok", "Indicatorul principal de productivitate."),
     ("Profit brut / FTE", None, F_MONEY, "pct_ok", "Productivitate ajustată cu marja."),
     ("EXPERIENȚA CLIENTULUI", None, None, None, None),
@@ -1106,7 +1109,11 @@ c_cols = [
     ("Profit brut", 13, F_MONEY, f'=IF($A{{r}}="","",SUMIFS({TX_GP},{TX_CUST},$A{{r}},{win(cf,ct)}))'),
     ("Marjă %", 10, F_PCT, '=IF($A{r}="","",IFERROR($H{r}/$E{r},""))'),
     ("% din venit total", 12, F_PCT, f'=IF($A{{r}}="","",IFERROR($E{{r}}/{sumifs(TX_REV,cf,ct)},""))'),
-    ("Ultima achiziție", 13, F_DATE, f'=IF($A{{r}}="","",IFERROR(IF(SUMPRODUCT(MAX(({TX_CUST}=$A{{r}})*({TX_REV}<>"")*{TX_DATE}))=0,"",SUMPRODUCT(MAX(({TX_CUST}=$A{{r}})*({TX_REV}<>"")*{TX_DATE}))),""))'),
+    # Se caută ultima vânzare reală: un storno (venit negativ) nu e o achiziție
+    # și nu trebuie să facă un client adormit să pară activ.
+    ("Ultima achiziție", 13, F_DATE,
+     f'=IF($A{{r}}="","",IFERROR(IF(SUMPRODUCT(MAX(({TX_CUST}=$A{{r}})*({TX_REV}>0)*{TX_DATE}))=0,"",'
+     f'SUMPRODUCT(MAX(({TX_CUST}=$A{{r}})*({TX_REV}>0)*{TX_DATE}))),""))'),
     ("Zile de la ultima achiziție", 13, F_INT, f'=IF(OR($A{{r}}="",$K{{r}}=""),"",{P["today"]}-$K{{r}})'),
     ("Nr. produse cumpărate", 12, F_INT, f'=IF($A{{r}}="","",SUMPRODUCT(({PR_ID}<>"")*(SUMIFS({TX_REV},{TX_CUST},$A{{r}},{TX_PROD},{PR_ID},{win(cf,ct)})<>0)))'),
     ("NPS mediu", 11, F_PCT2, f'=IF($A{{r}}="","",IFERROR(AVERAGEIFS({NP_SCORE},{NP_CUST},$A{{r}},{NP_DATE},">="&{cf},{NP_DATE},"<="&{ct}),""))'),
@@ -1309,7 +1316,8 @@ for rr in range(first_opp, last_opp + 1):
         if fmt:
             c.number_format = fmt
         c.fill = PatternFill("solid", fgColor=CALC_FILL if j in (9, 10) else INPUT_FILL)
-    ws.cell(row=rr, column=9, value=f'=IF($F{rr}="","",N($F{rr})*N($G{rr})*N($H{rr}))')
+    ws.cell(row=rr, column=9,
+            value=f'=IF(OR($F{rr}="",$G{rr}="",$H{rr}=""),"",$F{rr}*$G{rr}*$H{rr})')
     ws.cell(row=rr, column=10,
             value=f'=IF($I{rr}="","",IF($I{rr}>={P["high"]},"HIGH",IF($I{rr}>={P["med"]},"MEDIUM","LOW")))')
     ws.cell(row=rr, column=9).font = Font(size=10, bold=True, color=INK)

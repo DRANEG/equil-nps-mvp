@@ -420,8 +420,10 @@ FORMULE_A = {
     6: f'=IF($A{{r}}="","",SUMIFS({V_PROFIT},{V_CLIENT},$A{{r}},{win(A, B)}))',
     7: '=IF($A{r}="","",IFERROR($F{r}/$C{r},""))',
     8: f'=IF($A{{r}}="","",IFERROR($C{{r}}/{f_venit(A, B)},""))',
-    9: (f'=IF($A{{r}}="","",IFERROR(IF(SUMPRODUCT(MAX(({V_CLIENT}=$A{{r}})*({V_VENIT}<>"")*{V_DATA}))=0,"",'
-        f'SUMPRODUCT(MAX(({V_CLIENT}=$A{{r}})*({V_VENIT}<>"")*{V_DATA}))),""))'),
+    # Un storno (venit negativ) nu e o achiziție: nu trebuie să facă un client
+    # adormit să pară activ.
+    9: (f'=IF($A{{r}}="","",IFERROR(IF(SUMPRODUCT(MAX(({V_CLIENT}=$A{{r}})*({V_VENIT}>0)*{V_DATA}))=0,"",'
+        f'SUMPRODUCT(MAX(({V_CLIENT}=$A{{r}})*({V_VENIT}>0)*{V_DATA}))),""))'),
     10: f'=IF(OR($A{{r}}="",$I{{r}}=""),"",{P_AZI}-$I{{r}})',
     11: (f'=IF($A{{r}}="","",IFERROR(IF(INDEX({CL_NOTA},MATCH($A{{r}},{CL_NUME},0))="","",'
          f'INDEX({CL_NOTA},MATCH($A{{r}},{CL_NUME},0))),""))'),
@@ -493,7 +495,7 @@ COL_PLAN = [
     ("Ce a ieșit", 26, None, "După ce ai făcut-o: a mers sau nu, și cât a adus."),
 ]
 LAST_P = tabel(ws_p, COL_PLAN, N_PLAN, calc_cols=(6, 7), inaltime=38)
-umple(ws_p, 6, '=IF($D{r}="","",N($D{r})*N($E{r}))', LAST_P, F_MONEY)
+umple(ws_p, 6, '=IF(OR($D{r}="",$E{r}=""),"",$D{r}*$E{r})', LAST_P, F_MONEY)
 SCOR = f"$F${R0}:$F${LAST_P}"
 umple(ws_p, 7,
       '=IF($F{r}="","",IF(COUNTIF(' + SCOR + ',">"&$F{r})<3,"ACUM",'

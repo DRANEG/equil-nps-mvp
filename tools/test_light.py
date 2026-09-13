@@ -188,6 +188,57 @@ for i in range(len(clienti)):
 
 
 
+
+# ---- verificare completă a foii 21, coloană cu coloană ------------------
+print("\n== 21_CE_SE_INTAMPLA: toate coloanele calculate ==")
+
+
+def _venit(f, client=None):
+    return sum(r[4] for r in V
+               if f[0] <= r[0] <= f[1] and (client is None or r[1] == client))
+
+
+def _profit(f, client=None):
+    return sum(r[4] - r[5] for r in V
+               if f[0] <= r[0] <= f[1] and (client is None or r[1] == client))
+
+
+def _ultima(client):
+    d = [r[0] for r in V if r[1] == client and r[4] > 0]
+    return max(d) if d else None
+
+
+gresite_21 = 0
+for i, cl in enumerate(clienti):
+    r = R0 + i
+    nume = cl[0]
+    vc, vp = _venit(CUR, nume), _venit(CMP, nume)
+    pb = _profit(CUR, nume)
+    ua = _ultima(nume)
+    astept = {
+        "C": vc,
+        "D": vp,
+        "E": "" if vp == 0 else (vc - vp) / abs(vp),
+        "F": pb,
+        "G": pb / vc if vc else "",
+        "H": vc / _venit(CUR),
+        "J": (CUR[1] - ua).days if ua else "",
+        "K": cl[3] if cl[3] is not None else "",
+    }
+    for col, a in astept.items():
+        g = val("21_CE_SE_INTAMPLA", f"{col}{r}")
+        if isinstance(a, str):
+            potrivit = g in (None, "", 0) if a == "" else str(g) == a
+        else:
+            try:
+                potrivit = abs(float(g) - float(a)) < 0.01
+            except (TypeError, ValueError):
+                potrivit = False
+        if not potrivit:
+            gresite_21 += 1
+            print(f"   DIFERIT {nume} col {col}: Excel={g!r} așteptat={a!r}")
+print(f"   {len(clienti) * 8 - gresite_21} din {len(clienti) * 8} valori corecte")
+
 print("\n== Istoric financiar (01_FIRMA) ==")
 wsf2 = wb["01_FIRMA"]
 ra = next(r for r in range(1, wsf2.max_row + 1) if wsf2.cell(row=r, column=1).value == "An")
