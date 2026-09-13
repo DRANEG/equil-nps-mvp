@@ -51,6 +51,7 @@ N_VANZARI, N_TINTE, N_NPS = _n("N_VANZARI", 1000), _n("N_TINTE", 300), _n("N_NPS
 N_OPP, N_CONTACTE = _n("N_OPP", 60), _n("N_CONTACTE", 30)
 OUT = _os.environ.get("OUT", "dist/EQUIL_Growth_Intelligence_v0_2.xlsx")
 
+from piata import adauga_concurenta, adauga_perceptie
 from stil import (verifica, INK, TEAL, TEAL_LIGHT, SAND, INPUT_FILL, CALC_FILL, WHITE, GREY_TXT,
                   C_SER1, C_SER2, C_MUTED, C_ORD, C_GOOD, C_WARN, C_BAD,
                   F_MONEY, F_PCT, F_PCT2, F_DATE, F_NUM, F_INT, BORDER,
@@ -904,6 +905,16 @@ def sumifs(val, a, b, extra=""):
     return f'SUMIFS({val},{win(a,b)}{extra})'
 
 
+# ------------------------------------------------- 16 / 17 — piata si perceptie
+_cf, _ct = P["cur_from"], P["cur_to"]
+_nps_n = f'SUMPRODUCT(({NP_DATE}>={_cf})*({NP_DATE}<={_ct})*({NP_SCORE}<>""))'
+_nps_scor = (f'IFERROR((COUNTIFS({NP_DATE},">="&{_cf},{NP_DATE},"<="&{_ct},{NP_SCORE},">=9")'
+             f'-COUNTIFS({NP_DATE},">="&{_cf},{NP_DATE},"<="&{_ct},{NP_SCORE},"<=6"))'
+             f'/({_nps_n})*100,"")')
+CONC = adauga_concurenta(wb, "16_CONCURENTA", n_randuri=25, light=False)
+PERC = adauga_perceptie(wb, "17_CE_CRED_OAMENII", CONC,
+                        nps_scor=_nps_scor, nps_nr=_nps_n, light=False)
+
 # ---------------------------------------------------------------- 20_KPI
 
 ws = wb.create_sheet("20_KPI")
@@ -1420,6 +1431,19 @@ CONCLUZII = [
      f'=IF({_tgt}=0,"Nu este completată o țintă de venit pentru perioadă (14_TINTE, nivel „Companie”). Fără ea nu se poate măsura gap-ul.",'
      f'"Atingerea țintei este "&{pct(_ating)}&IF({_gap}>0,", mai lipsesc "&{mon(_gap)}&" "&{CUR}&" până la plan.",'
      f'", ținta este depășită."))'),
+    ("Piață și reputație",
+     f'=IF(AND({CONC["nr_concurenti"]}=0,{PERC["total_recenzii"]}=0),'
+     f'"Nu e completat nimic despre concurență și reputație (foile 16 și 17). '
+     f'E cel mai ieftin context din tot fișierul: o oră de căutat public, fără să întrebi pe nimeni.",'
+     f'"Urmărim "&{mon(CONC["nr_concurenti"])}&" concurenți"&'
+     f'IF({CONC["cota_grup"]}="","",", în care firma are "&{pct(CONC["cota_grup"])}&" din cifra grupului")&". "&'
+     f'IF({CONC["nota_noastra"]}="","Firma nu are încă notă publică — verifică dacă are fișă Google Business.",'
+     f'"Nota publică este "&FIXED({CONC["nota_noastra"]},1)&" din 5"&'
+     f'IF({CONC["nota_concurenti"]}="","."," , față de "&FIXED({CONC["nota_concurenti"]},1)&" media concurenților"&'
+     f'IF({CONC["nota_noastra"]}>{CONC["nota_concurenti"]}+0.2," — poziție mai bună decât a lor.",'
+     f'IF({CONC["nota_noastra"]}<{CONC["nota_concurenti"]}-0.2," — poziție mai slabă; se rezolvă înainte de a crește volumul.",'
+     f'" — aceeași poziție."))))&'
+     f'IF({PERC["scor_perceptie"]}="",""," Scor de percepție: "&FIXED({PERC["scor_perceptie"]},0)&"/100 (încredere: "&{PERC["increderea"]}&")."))'),
     ("Oportunități",
      f'=IF({_oppn}=0,"Nu sunt încă oportunități completate în 30_OPORTUNITATI.",'
      f'"Sunt "&{mon(_oppn)}&" oportunități identificate, cu valoare ponderată de "&{mon(_oppv)}&" "&{CUR}&'
@@ -1772,9 +1796,36 @@ ch6.dataLabels.numFmt = F_MONEY
 ch6.width, ch6.height = 17, 8.5
 ws.add_chart(ch6, "L40")
 
+# 7. Nota publica: firma fata de concurenti (evidentiem bara noastra, restul raman discrete)
+CONC_NOTA = get_column_letter(list(CONC["col"]).index("Notă publică (1-5)") + 1)
+CONC_CINE = get_column_letter(list(CONC["col"]).index("Cine") + 1)
+ws_conc = wb[CONC["foaie"]]
+ch7 = BarChart()
+ch7.type, ch7.gapWidth = "bar", 45
+ch7.title = "Nota publică: firma față de concurenți"
+ch7.add_data(Reference(ws_conc, min_col=list(CONC["col"]).index("Notă publică (1-5)") + 1,
+                       min_row=CONC["prim_rand"] - 1, max_row=CONC["prim_rand"] + 9),
+             titles_from_data=True)
+ch7.set_categories(Reference(ws_conc, min_col=list(CONC["col"]).index("Cine") + 1,
+                             min_row=CONC["prim_rand"], max_row=CONC["prim_rand"] + 9))
+culoare(ch7.series[0], "C3C2B7")
+ch7.series[0].data_points = [
+    DataPoint(idx=0, spPr=GraphicalProperties(solidFill=C_SER1, ln=LineProperties(noFill=True)))]
+etichete_text(ch7, f"'{CONC['foaie']}'!${CONC_CINE}${CONC['prim_rand']}:${CONC_CINE}${CONC['prim_rand'] + 9}")
+stil_axe(ch7, numfmt="0.0", grid=False)
+ch7.y_axis.scaling.min = 0
+ch7.y_axis.scaling.max = 5
+ch7.legend = None
+ch7.dataLabels = DataLabelList()
+ch7.dataLabels.showVal = True
+ch7.dataLabels.numFmt = "0.0"
+ch7.width, ch7.height = 17, 9.5
+ws.add_chart(ch7, "A58")
+
 # ordinea foilor
 order = ["00_GHID", "01_FIRMA", "02_CONTACTE", "03_CHECKLIST_DATE", "04_DICTIONAR", SH_PAR,
          SH_CLIENTI, SH_PRODUSE, SH_OAMENI, SH_VANZARI, SH_TINTE, SH_NPS,
+         "16_CONCURENTA", "17_CE_CRED_OAMENII",
          "20_KPI", "21_ANALIZA_CLIENTI", "22_ANALIZA_PRODUSE", "23_ANALIZA_OAMENI",
          "30_OPORTUNITATI", "40_RAPORT", "41_GRAFICE", "90_LISTE"]
 wb._sheets = [wb[s] for s in order]

@@ -233,6 +233,21 @@ table.compara th:nth-child(2) { color: var(--accent); }
 table.compara td:first-child { color: var(--ink-faint); width: 11rem; }
 table.compara tr:last-child td { border-bottom: 0; }
 table.compara td:nth-child(2) { background: var(--accent-wash); }
+ol.nivele { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+ol.nivele li { display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; gap: 6px 20px; padding-block: 22px; border-top: 1px solid var(--rule); }
+ol.nivele li:last-child { border-bottom: 1px solid var(--rule); }
+.niv-nr { grid-row: span 3; font-family: Newsreader, ui-serif, Georgia, serif; font-size: var(--step-3); line-height: 1; color: var(--accent); }
+.niv-nume { font-family: Newsreader, ui-serif, Georgia, serif; font-size: var(--step-2); align-self: baseline; }
+.niv-cost { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: var(--step--1); color: var(--accent); background: var(--accent-wash); padding: 3px 9px; border-radius: 2px; white-space: nowrap; justify-self: end; align-self: baseline; }
+.niv-text { grid-column: 2 / span 2; margin: 0; color: var(--ink-soft); max-width: 70ch; }
+.niv-limita { grid-column: 2 / span 2; margin: 0; color: var(--ink-faint); font-size: var(--step--1); max-width: 70ch; }
+.niv-limita strong { color: var(--ink-soft); }
+@media (max-width: 720px) {
+  ol.nivele li { grid-template-columns: 2.25rem minmax(0, 1fr); }
+  .niv-nr { grid-row: span 4; }
+  .niv-cost { grid-column: 2; justify-self: start; }
+  .niv-text, .niv-limita { grid-column: 2; }
+}
 .nota-variante { margin-top: 20px; max-width: 68ch; color: var(--ink-soft); }
 @media (max-width: 640px) {
   table.compara th, table.compara td { padding: 9px 10px; }
@@ -401,6 +416,7 @@ def build():
     <a href="#variante">Care variantă</a>
     <a href="#proces">Procesul</a>
     <a href="#fisier">Un fișier per firmă</a>
+    <a href="#nps">Drumul către NPS</a>
     <a href="#office">Am nevoie de Office nou?</a>
     <a href="#dictionar">Dicționar</a>
   </nav>
@@ -476,6 +492,58 @@ def build():
       <p>Copiezi fișierul firmei, adaugi liniile noi de vânzări și muți perioada în
          <strong>09_PARAMETRI</strong>. Istoricul rămâne: de el depinde comparația.</p>
     </div>
+  </div>
+</section>
+
+<section id="nps">
+  <h2>Drumul către NPS</h2>
+  <p class="intro">Majoritatea firmelor mici nu au măsurat niciodată ce cred clienții despre ele.
+     Asta nu înseamnă că nu se poate ști nimic: se poate ști destul de mult fără să întrebi pe nimeni,
+     iar ce afli așa e primul pas, nu un substitut permanent.</p>
+
+  <ol class="nivele">
+    <li>
+      <span class="niv-nr">1</span>
+      <span class="niv-nume">Ce se vede public</span>
+      <span class="niv-cost">0 lei · 30 min</span>
+      <p class="niv-text">Nota și recenziile de pe Google și Facebook, ale firmei și ale concurenților.
+         Vezi exact ce vede un client nou înainte să sune. Citește recenziile de 1-2 stele:
+         acolo scrie, în cuvintele clienților, ce nu merge.</p>
+      <p class="niv-limita"><strong>Ce nu îți spune:</strong> părerea celor care cumpără constant.
+         Recenziile le lasă mai ales cei foarte supărați și cei foarte încântați.</p>
+    </li>
+    <li>
+      <span class="niv-nr">2</span>
+      <span class="niv-nume">Părerea specialistului</span>
+      <span class="niv-cost">0 lei · 1-2 ore</span>
+      <p class="niv-text">Zece verificări pe care le faci tu: cât de clar se înțelege ce vinde firma,
+         cât de repede răspunde la o cerere reală (trimite una și cronometrează), ce se aude despre ea
+         în piață. Structurate, deci comparabile între firme și în timp.</p>
+      <p class="niv-limita"><strong>Ce nu îți spune:</strong> dacă lucrurile pe care le observi tu
+         contează și pentru clienții lor. Uneori nu contează.</p>
+    </li>
+    <li>
+      <span class="niv-nr">3</span>
+      <span class="niv-nume">NPS real</span>
+      <span class="niv-cost">0 lei · 2 ore de telefoane</span>
+      <p class="niv-text">O întrebare, pusă clienților: <em>„De la 0 la 10, cât de probabil ne-ați
+         recomanda unui prieten?”</em> Apoi, obligatoriu: <em>„De ce ați dat nota asta?”</em>
+         La o firmă cu 40 de clienți poți întreba pe toți.</p>
+      <p class="niv-limita"><strong>Singurul care îți spune</strong> ce cred oamenii care chiar plătesc.
+         Celelalte două sunt aproximări ale acestuia.</p>
+    </li>
+  </ol>
+
+  <div class="verdict" style="margin-top:28px">
+    <div class="call">Când cele trei nu sunt de acord, dezacordul e concluzia.</div>
+    <p><strong>Nota publică mult peste NPS</strong> — firma arată mai bine pe internet decât în relația
+       reală. Se plătește în reveniri: oamenii cumpără o dată și nu mai revin.</p>
+    <p><strong>Specialistul mult sub nota publică</strong> — recenziile sunt probabil vechi, puține sau
+       cerute selectiv. Verifică data ultimei recenzii.</p>
+    <p><strong>NPS peste nota publică</strong> — firma e mai bună decât se vede. E o problemă de
+       vizibilitate, nu de livrare, și e mult mai ieftin de rezolvat: cere o recenzie celor mulțumiți.</p>
+    <p>Fișierul calculează singur unde se află firma și îți scrie următorul pas, în foaia
+       <strong>Ce cred oamenii despre firmă</strong>.</p>
   </div>
 </section>
 

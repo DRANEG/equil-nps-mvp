@@ -27,6 +27,7 @@ from openpyxl.formatting.rule import CellIsRule
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
+from piata import adauga_concurenta, adauga_perceptie
 from stil import (verifica, INK, TEAL, TEAL_LIGHT, INPUT_FILL, CALC_FILL, WHITE, GREY_TXT,
                   C_SER1, C_SER2, C_GOOD, C_WARN, C_BAD,
                   F_MONEY, F_PCT, F_PCT2, F_DATE, F_NUM, F_INT, BORDER,
@@ -235,6 +236,11 @@ f_detractori = f'SUMPRODUCT(({CL_NUME}<>"")*({CL_NOTA}<>"")*({CL_NOTA}<=6))'
 f_pasivi = f'SUMPRODUCT(({CL_NUME}<>"")*({CL_NOTA}>=7)*({CL_NOTA}<=8))'
 f_nps = f'IFERROR((({f_promotori})-({f_detractori}))/({f_intrebati})*100,"")'
 
+# ================================================================ 12 / 13 — piata
+CONC = adauga_concurenta(wb, "12_CONCURENTA", n_randuri=10, light=True)
+PERC = adauga_perceptie(wb, "13_CE_CRED_OAMENII", CONC,
+                        nps_scor=f_nps, nps_nr=f_intrebati, light=True)
+
 # ================================================================ 20_REZULTATE
 ws_r = wb.create_sheet("20_REZULTATE")
 title_block(ws_r, "20 — REZULTATE",
@@ -348,6 +354,19 @@ CONCLUZII = [
     f'IF({_lipsa}=0,"Obiectivul e atins. Următorul pas e să afli ce a funcționat, ca să repeți.",'
     f'"S-a atins "&{pct(_atins)}&" din obiectiv. Mai lipsesc "&{mon(_lipsa)}&" "&{P_MONEDA}&". '
     f'Uită-te în 21_CE_SE_INTAMPLA: de obicei suma asta se găsește la 3-4 clienți."))',
+
+    f'=IF(AND({CONC["nr_concurenti"]}=0,{PERC["total_recenzii"]}=0),'
+    f'"Nu ai completat încă nimic despre concurență și reputație (foile 12 și 13). '
+    f'E cel mai ieftin context din tot fișierul: o oră pe internet, fără să întrebi pe nimeni.",'
+    f'"Urmărim "&{mon(CONC["nr_concurenti"])}&" concurenți. "&'
+    f'IF({CONC["nota_noastra"]}="","Firma nu are încă notă publică — verifică dacă are fișă Google Business. '
+    f'Un client nou o caută acolo înainte să sune.",'
+    f'"Nota publică e "&FIXED({CONC["nota_noastra"]},1)&" din 5"&'
+    f'IF({CONC["nota_concurenti"]}="","."," , față de "&FIXED({CONC["nota_concurenti"]},1)&" media concurenților"&'
+    f'IF({CONC["nota_noastra"]}>{CONC["nota_concurenti"]}+0.2," — stăm mai bine decât ei.",'
+    f'IF({CONC["nota_noastra"]}<{CONC["nota_concurenti"]}-0.2," — stăm mai slab; asta se rezolvă înainte de a crește volumul.",'
+    f'" — la fel ca ei."))))&'
+    f'IF({f_intrebati}=0," NPS nu e măsurat încă: scorul de percepție din foaia 13 ține locul, dar nu îl înlocuiește.",""))',
 ]
 for formula in CONCLUZII:
     ws_r.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5)
@@ -731,6 +750,7 @@ for eticheta, culoare_ in (("Galben", INPUT_FILL), ("Gri", CALC_FILL)):
 ws_s.sheet_view.showGridLines = False
 
 ORDINE = ["00_START", "01_FIRMA", "02_SETARI", "10_VANZARI", "11_CLIENTI",
+          "12_CONCURENTA", "13_CE_CRED_OAMENII",
           "20_REZULTATE", "21_CE_SE_INTAMPLA", "30_PLAN", "40_GRAFICE"]
 wb._sheets = [wb[x] for x in ORDINE]
 wb.active = 0

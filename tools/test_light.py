@@ -68,6 +68,42 @@ for i, (d, cl, ce, q, inc, cost) in enumerate(V):
     for j, v in enumerate((d, cl, ce, q, inc, cost), start=1):
         ws.cell(row=R0 + i, column=j, value=v)
 
+
+# --- piata si perceptie ---------------------------------------------------
+CONCURENTI = [
+    # cine, site, angajati, cifra, sursa, nota, recenzii, verificat, pret, castiga, pierde
+    ("NOI (firma analizată)", "instalatii-mures.ro", 4, 210000, "Date publice / bilanț", 4.1, 23,
+     dt.date(2026, 6, 20), "La fel", "Răspunde repede la urgențe", "Nu are ofertă scrisă"),
+    ("Termo Instal SRL", "termoinstal.ro", 11, 640000, "Date publice / bilanț", 4.7, 186,
+     dt.date(2026, 6, 20), "Mai scump", "Garanție 5 ani, contract clar", "Programare la 2 săptămâni"),
+    ("Clima Expert SRL", "climaexpert.ro", 6, 380000, "Date publice / bilanț", 4.4, 71,
+     dt.date(2026, 6, 20), "Mai ieftin", "Preț bun la montaj", "Reclamații pe termene"),
+    ("Instal Rapid", "", 2, 90000, "Estimare proprie", 3.6, 12,
+     dt.date(2026, 6, 20), "Mult mai ieftin", "Vine în aceeași zi", "Lucrări refăcute des"),
+]
+wsc = wb["12_CONCURENTA"]
+col_c = {wsc.cell(row=4, column=j).value: j for j in range(1, wsc.max_column + 1)}
+for i, row in enumerate(CONCURENTI):
+    rr = R0 + i
+    for camp, v in zip(["Cine", "Site", "Angajați", "Cifră de afaceri", "De unde e cifra",
+                        "Notă publică (1-5)", "Câte recenzii", "Verificat la data",
+                        "Preț față de noi", "Cu ce câștigă", "Unde pierde"], row):
+        wsc.cell(row=rr, column=col_c[camp], value=v)
+
+wsp = wb["13_CE_CRED_OAMENII"]
+# recenzii publice: Google + Facebook
+for i, (sursa, nota, nr, neg) in enumerate([("Google", 4.1, 23, 3), ("Facebook", 4.5, 8, 0)]):
+    rr = 6 + i
+    wsp.cell(row=rr, column=1, value=sursa)
+    wsp.cell(row=rr, column=4, value=nota)
+    wsp.cell(row=rr, column=5, value=nr)
+    wsp.cell(row=rr, column=6, value=neg)
+# evaluarea specialistului: 10 note
+NOTE_SPEC = [3, 2, 5, 4, 3, 4, 2, 2, 3, 3]
+dim_first = 15
+for i, n in enumerate(NOTE_SPEC):
+    wsp.cell(row=dim_first + i, column=2, value=n)
+
 wb["02_SETARI"]["B12"] = TINTA
 wb.save(path)
 
@@ -134,6 +170,34 @@ for i in range(len(clienti)):
         val("21_CE_SE_INTAMPLA", f"A{r}"), val("21_CE_SE_INTAMPLA", f"C{r}"),
         val("21_CE_SE_INTAMPLA", f"E{r}"), val("21_CE_SE_INTAMPLA", f"K{r}"),
         val("21_CE_SE_INTAMPLA", f"L{r}"), str(val("21_CE_SE_INTAMPLA", f"M{r}"))[:64]))
+
+
+print("\n== Piață și percepție ==")
+wsc2 = wb["12_CONCURENTA"]
+cc = {wsc2.cell(row=4, column=j).value: j for j in range(1, wsc2.max_column + 1)}
+from openpyxl.utils import get_column_letter as GL
+for i in range(4):
+    rr = R0 + i
+    print("  %-24s cotă=%-8s %s" % (
+        val("12_CONCURENTA", f"{GL(cc['Cine'])}{rr}"),
+        val("12_CONCURENTA", f"{GL(cc['Cotă în grup'])}{rr}"),
+        val("12_CONCURENTA", f"{GL(cc['Cum stăm față de el'])}{rr}")))
+sc = next(j for j in range(1, wsc2.max_column + 1)
+          if wsc2.cell(row=4, column=j).value == "CUM ARATĂ PIAȚA")
+print("  --- panou ---")
+for k, eticheta in enumerate(["Concurenți urmăriți", "Cifra totală a grupului", "Cota noastră în grup",
+                              "Piața totală estimată", "Cota noastră din piață", "Nota noastră publică",
+                              "Nota medie a concurenților", "Diferența"], start=1):
+    print("   %-28s %s" % (eticheta, val("12_CONCURENTA", f"{GL(sc+1)}{4+k}")))
+
+print("\n== Scorul de percepție (13_CE_CRED_OAMENII) ==")
+wsp2 = wb["13_CE_CRED_OAMENII"]
+for rr in range(26, 45):
+    et = wsp2.cell(row=rr, column=1).value
+    if et and not str(et).startswith(("3.", "4.")):
+        v = val("13_CE_CRED_OAMENII", f"B{rr}")
+        if v not in (None, ""):
+            print("   %-34s %s" % (str(et)[:34], v))
 
 print("\n== Grafice: top clienți ==")
 for i in range(1, 5):
