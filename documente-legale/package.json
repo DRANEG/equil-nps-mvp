@@ -1,0 +1,7 @@
+{
+  "name": "equil-documente-legale",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generatoare pentru documentele legale EQUIL (GDPR, contracte, confidentialitate)",
+  "dependencies": { "docx": "^9.7.1" }
+}
