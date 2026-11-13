@@ -21,10 +21,13 @@ npm start                 # pornește pe http://localhost:3000
 - Sondaj public demo: <http://localhost:3000/s/demo-nps>
 - Administrare: <http://localhost:3000/admin> (parola = `ADMIN_TOKEN` din `.env`)
 
-Teste: `npm test` (112 teste — calculul NPS, fluxul de răspuns, autentificare, export,
+**Pentru punerea în funcțiune la un client real, urmează [LANSARE.md](LANSARE.md)** —
+pașii în ordine, de la server la primul val, cu verificări la fiecare etapă.
+
+Teste: `npm test` (122 de teste — calculul NPS, fluxul de răspuns, autentificare, export,
 protocolul SMTP, robotul de trimitere, dezabonarea, întrebările proprii, locațiile,
 generatorul de coduri QR, aplicația instalabilă, alertele la detractori, formatele românești,
-sărbătorile legale, obligațiile GDPR și protecțiile de securitate).
+sărbătorile legale, obligațiile GDPR, protecțiile de securitate și verificarea de pre-lansare).
 
 ## 2. Ce face
 
@@ -300,6 +303,9 @@ src/
   scheduler.js       robotul: ce se trimite, când și cu ce protecții
   send.js            o singură trecere de trimitere, pentru cron
   seed.js            date demo
+  verifica.js        verificarea de dinainte de lansare
+  backup.js          copie de siguranta, fara oprirea serverului
+deploy/              systemd, Caddy (HTTPS), cron, script de instalare
 public/
   manifest.webmanifest  aplicatia instalabila (PWA)
   sw.js                 service worker: offline si cache
@@ -334,6 +340,8 @@ Rute principale:
 ## 11. Punere în producție
 
 - Setează `ADMIN_TOKEN` (parolă lungă) și `PUBLIC_URL` (domeniul real, cu `https://`).
+- Pornește de la [LANSARE.md](LANSARE.md) și rulează `npm run verifica` înainte de a da drumul:
+  prinde parola implicită, domeniul fără HTTPS, expeditorul de pe Gmail și datele de firmă lipsă.
 - Rulează în spatele unui reverse proxy cu TLS (Caddy, Nginx) — cookie-ul de admin e
   `HttpOnly` + `SameSite=Lax`, dar parola circulă doar criptat dacă ai HTTPS. HTTPS este și
   condiția ca aplicația să poată fi instalată pe telefon.

@@ -4,5 +4,6 @@ data/*.db-journal
 data/*.db-wal
 data/*.db-shm
 data/outbox/
+data/backup/
 .env
 .DS_Store

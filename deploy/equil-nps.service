@@ -1,0 +1,34 @@
+# Serviciul care ține aplicația pornită și o repornește singură dacă pică.
+# Instalare:
+#   sudo cp deploy/equil-nps.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now equil-nps
+# Jurnal:  journalctl -u equil-nps -f
+
+[Unit]
+Description=Equil NPS
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=equil
+Group=equil
+WorkingDirectory=/opt/equil-nps
+EnvironmentFile=/etc/equil-nps.env
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=5
+
+# Aplicația nu are nevoie de nimic din sistem în afară de folderul ei de date.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/equil-nps/data
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,28 @@
+# Caddy se ocupă singur de certificatul HTTPS (Let's Encrypt) și îl reînnoiește.
+# Instalare:
+#   sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
+#   (schimbă domeniul de mai jos cu al tău)
+#   sudo systemctl reload caddy
+#
+# Condiție: domeniul trebuie să aibă deja un A record către IP-ul serverului.
+
+nps.firma-ta.ro {
+	encode zstd gzip
+
+	header {
+		# Forțează HTTPS în browser pentru un an.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	reverse_proxy 127.0.0.1:3000 {
+		header_up X-Forwarded-For {remote_host}
+	}
+
+	log {
+		output file /var/log/caddy/nps.log
+		format console
+	}
+}

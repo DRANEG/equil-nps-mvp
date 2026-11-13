@@ -1,0 +1,11 @@
+# Sarcini programate. Instalare:  sudo crontab -u equil -e
+# (Robotul de trimitere merge deja în aplicație; cron-ul e pentru copii și curățenie.)
+
+# Copie de siguranță zilnic, la 3 dimineața
+0 3 * * * cd /opt/equil-nps && /usr/bin/npm run backup >> /var/log/equil-nps-backup.log 2>&1
+
+# Curățenia GDPR (anonimizarea datelor vechi), zilnic la 3:30
+30 3 * * * cd /opt/equil-nps && /usr/bin/npm run retentie >> /var/log/equil-nps-gdpr.log 2>&1
+
+# Dacă ții robotul oprit (SEND_ENABLED=0), trimiterea din oră în oră:
+# 0 * * * * cd /opt/equil-nps && /usr/bin/npm run trimite >> /var/log/equil-nps-email.log 2>&1

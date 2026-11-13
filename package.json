@@ -13,7 +13,9 @@
     "seed": "node src/seed.js",
     "test": "node --test \"test/**/*.test.js\"",
     "trimite": "node src/send.js",
-    "retentie": "node src/retentie.js"
+    "retentie": "node src/retentie.js",
+    "verifica": "node src/verifica-cli.js",
+    "backup": "node src/backup.js"
   },
   "license": "UNLICENSED"
 }
