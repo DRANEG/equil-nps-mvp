@@ -1,0 +1,193 @@
+// Schema de date EQUIL — Etapa 0 (fundația).
+// Ierarhie: Company (firma-client) -> Location (punct de lucru) -> Response (feedback).
+// Un detractor genereaza un Task (actiune), rutat fie catre managerul locatiei
+// (SELF_SERVE), fie catre echipa EQUIL (MANAGED), care propune actiunea.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Utilizatori si acces ----------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  // Personal EQUIL: vede firmele in mod MANAGED si le propune actiuni
+  isStaff      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  memberships      Membership[]
+  managedLocations LocationManager[]
+  tasksAssigned    Task[]            @relation("TaskAssignee")
+  tasksCreated     Task[]            @relation("TaskCreator")
+}
+
+enum Role {
+  OWNER   // fondatorul / administratorul firmei-client
+  ADMIN   // acces complet in firma
+  MANAGER // acces doar la locatiile pe care le gestioneaza
+}
+
+model Membership {
+  userId    String
+  companyId String
+  role      Role
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@id([userId, companyId])
+  @@index([companyId])
+}
+
+// ---------- Firma-client ----------
+
+enum ServiceMode {
+  SELF_SERVE // managerul locatiei primeste direct sarcinile
+  MANAGED    // EQUIL preia feedback-ul, analizeaza si propune actiuni (contra cost)
+}
+
+model Company {
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  serviceMode ServiceMode @default(SELF_SERVE)
+  createdAt   DateTime    @default(now())
+
+  memberships Membership[]
+  locations   Location[]
+  surveys     Survey[]
+  tasks       Task[]
+}
+
+// ---------- Locatii ----------
+
+model Location {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  address     String?
+  city        String?
+  // Token scurt pentru linkul public / codul QR: /f/{publicToken}
+  publicToken String   @unique
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  company   Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  managers  LocationManager[]
+  responses Response[]
+  tasks     Task[]
+
+  @@index([companyId])
+}
+
+// Cine raspunde de o locatie (primeste sarcinile in modul SELF_SERVE)
+model LocationManager {
+  locationId String
+  userId     String
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([locationId, userId])
+  @@index([userId])
+}
+
+// ---------- Chestionare si raspunsuri ----------
+
+model Survey {
+  id              String   @id @default(cuid())
+  companyId       String
+  name            String
+  // Intrebarea NPS standard; firma o poate adapta
+  question        String   @default("Cât de probabil este să ne recomandați unui prieten sau coleg?")
+  followUpPrompt  String   @default("Ce anume v-a determinat să acordați această notă?")
+  thankYouMessage String   @default("Mulțumim! Părerea dumneavoastră ajunge direct la echipa noastră.")
+  isDefault       Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  responses Response[]
+
+  @@index([companyId])
+}
+
+enum Channel {
+  QR
+  LINK
+  EMAIL
+}
+
+model Response {
+  id         String   @id @default(cuid())
+  locationId String
+  surveyId   String
+  // Scorul NPS: 0-10. Categoria (detractor/pasiv/promotor) se calculeaza, nu se stocheaza.
+  score      Int
+  comment    String?
+  channel    Channel  @default(LINK)
+  // Optional, doar cu acordul respondentului, pentru inchiderea buclei
+  contact    String?
+  createdAt  DateTime @default(now())
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  survey   Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  task     Task?
+
+  @@index([locationId, createdAt])
+  @@index([surveyId])
+}
+
+// ---------- Actiuni (inchiderea buclei) ----------
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+}
+
+enum TaskSource {
+  AUTO_DETRACTOR       // generata automat la un scor 0-6
+  EQUIL_RECOMMENDATION // propusa de echipa EQUIL (mod MANAGED)
+  MANUAL               // creata de un utilizator al firmei
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  companyId   String
+  locationId  String?
+  responseId  String?    @unique
+  title       String
+  description String?
+  // In modul MANAGED: analiza si actiunea propusa de EQUIL
+  recommendation String?
+  // Ce s-a schimbat dupa aplicare — masurarea efectului
+  outcome     String?
+  status      TaskStatus @default(OPEN)
+  source      TaskSource @default(MANUAL)
+  // Null + firma in MANAGED = asteapta analiza EQUIL
+  assigneeId  String?
+  createdById String?
+  dueAt       DateTime?
+  resolvedAt  DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  location  Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  response  Response? @relation(fields: [responseId], references: [id], onDelete: SetNull)
+  assignee  User?     @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdBy User?     @relation("TaskCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([companyId, status])
+  @@index([assigneeId, status])
+}
