@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #111614;
+  --color-ink-soft: #4a544f;
+  --color-ink-faint: #7b857f;
+  --color-forest: #0a2b25;
+  --color-forest-2: #0f3d34;
+  --color-emerald: #0f9d72;
+  --color-emerald-deep: #0b7a58;
+  --color-emerald-bright: #3ee0a8;
+  --color-gold: #c08a2e;
+  --color-ivory: #fbf9f5;
+  --color-sand: #f2ede4;
+  --color-line: rgba(17, 22, 20, 0.11);
+  --color-line-soft: rgba(17, 22, 20, 0.07);
+
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+
+  --shadow-card: 0 2px 6px rgba(17, 22, 20, 0.05), 0 18px 44px rgba(17, 22, 20, 0.09);
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  @apply bg-ivory text-ink font-sans;
+}
+
+h1, h2, h3 {
+  @apply font-display;
+  letter-spacing: -0.018em;
+  text-wrap: balance;
+}
+
+/* Campuri de formular — un singur stil, peste tot */
+.field {
+  @apply w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-[15px] text-ink outline-none transition;
+}
+.field:focus {
+  @apply border-emerald;
+  box-shadow: 0 0 0 3px rgba(15, 157, 114, 0.13);
+}
+.field::placeholder {
+  @apply text-ink-faint;
+}
+
+/* Tailwind 4: @apply nu poate referi clase proprii, deci baza comuna sta pe o lista de selectori */
+.btn, .btn-primary, .btn-dark, .btn-line {
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition cursor-pointer;
+}
+.btn-primary {
+  @apply bg-emerald text-white;
+}
+.btn-primary:hover {
+  @apply bg-emerald-deep;
+}
+.btn-dark {
+  @apply bg-ink text-ivory;
+}
+.btn-dark:hover {
+  @apply bg-forest;
+}
+.btn-line {
+  @apply border border-line text-ink bg-transparent;
+}
+.btn-line:hover {
+  @apply border-ink;
+}
+
+.card {
+  @apply rounded-2xl border border-line bg-white p-6;
+}
+
+.eyebrow {
+  @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-faint;
+}
